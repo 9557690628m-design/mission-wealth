@@ -1,4 +1,14 @@
-﻿export interface StockItem {
+﻿export interface QuarterlyResult {
+  quarter: string;
+  sales: number;
+  expenses: number;
+  operatingProfit: number;
+  opmPercent: number;
+  netProfit: number;
+  eps: number;
+}
+
+export interface StockItem {
   symbol: string;
   name: string;
   exchange: "NSE" | "BSE" | "NSE/BSE";
@@ -12,10 +22,10 @@
   evEbitda: number;
   description: string;
   signal: "Strong" | "Moderate" | "Watchlist";
+  quarters: QuarterlyResult[];
 }
 
 export const STOCK_DATASET: StockItem[] = [
-  // --- IT & TECH ---
   {
     symbol: "TCS",
     name: "Tata Consultancy Services Ltd",
@@ -29,40 +39,14 @@ export const STOCK_DATASET: StockItem[] = [
     pb: 14.1,
     evEbitda: 20.4,
     description: "India's largest IT exporter with global leadership in digital transformation, cloud migrations, and enterprise cognitive operations.",
-    signal: "Strong"
+    signal: "Strong",
+    quarters: [
+      { quarter: "Dec 2023", sales: 60583, expenses: 44850, operatingProfit: 15733, opmPercent: 26.0, netProfit: 11097, eps: 30.3 },
+      { quarter: "Mar 2024", sales: 61237, expenses: 45290, operatingProfit: 15947, opmPercent: 26.0, netProfit: 12434, eps: 34.0 },
+      { quarter: "Jun 2024", sales: 62613, expenses: 46890, operatingProfit: 15723, opmPercent: 25.1, netProfit: 12040, eps: 33.2 },
+      { quarter: "Sep 2024", sales: 64259, expenses: 48010, operatingProfit: 16249, opmPercent: 25.3, netProfit: 11955, eps: 32.8 }
+    ]
   },
-  {
-    symbol: "INFY",
-    name: "Infosys Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "500209",
-    sector: "Information Technology",
-    price: 1880,
-    marketCap: "₹7,80,200 Cr",
-    pe: 27.4,
-    roe: 31.5,
-    pb: 8.9,
-    evEbitda: 18.2,
-    description: "Global consulting and next-generation digital services leader known for strong capital return policies and generative AI integration.",
-    signal: "Strong"
-  },
-  {
-    symbol: "HCLTECH",
-    name: "HCL Technologies Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "532281",
-    sector: "Information Technology",
-    price: 1760,
-    marketCap: "₹4,78,000 Cr",
-    pe: 26.1,
-    roe: 27.8,
-    pb: 7.2,
-    evEbitda: 16.5,
-    description: "Leading engineering R&D and digital infrastructure player with top-tier dividend payout track record.",
-    signal: "Moderate"
-  },
-
-  // --- BANKING & FINANCIAL SERVICES ---
   {
     symbol: "HDFCBANK",
     name: "HDFC Bank Ltd",
@@ -75,41 +59,15 @@ export const STOCK_DATASET: StockItem[] = [
     roe: 16.8,
     pb: 2.7,
     evEbitda: 14.2,
-    description: "India's largest private sector bank with pristine asset quality, industry-leading CASA metrics, and expanding retail loan franchises.",
-    signal: "Strong"
+    description: "India's largest private sector bank with pristine asset quality, industry-leading CASA metrics, and nationwide distribution.",
+    signal: "Strong",
+    quarters: [
+      { quarter: "Dec 2023", sales: 71701, expenses: 48110, operatingProfit: 23591, opmPercent: 32.9, netProfit: 16372, eps: 21.6 },
+      { quarter: "Mar 2024", sales: 72450, expenses: 43230, operatingProfit: 29220, opmPercent: 40.3, netProfit: 16511, eps: 21.7 },
+      { quarter: "Jun 2024", sales: 73010, expenses: 43810, operatingProfit: 29200, opmPercent: 40.0, netProfit: 16174, eps: 21.3 },
+      { quarter: "Sep 2024", sales: 74520, expenses: 44210, operatingProfit: 30310, opmPercent: 40.7, netProfit: 16820, eps: 22.1 }
+    ]
   },
-  {
-    symbol: "ICICIBANK",
-    name: "ICICI Bank Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "532174",
-    sector: "Banking & Financial Services",
-    price: 1250,
-    marketCap: "₹8,82,000 Cr",
-    pe: 17.5,
-    roe: 18.4,
-    pb: 3.1,
-    evEbitda: 13.8,
-    description: "Consistently delivering superior return on assets (RoA) driven by digital sourcing, underwriting discipline, and low credit costs.",
-    signal: "Strong"
-  },
-  {
-    symbol: "SBIN",
-    name: "State Bank of India",
-    exchange: "NSE/BSE",
-    bseCode: "500112",
-    sector: "Public Sector Banking",
-    price: 810,
-    marketCap: "₹7,22,500 Cr",
-    pe: 10.4,
-    roe: 17.2,
-    pb: 1.6,
-    evEbitda: 9.8,
-    description: "India's premier public sector lender commanding roughly a quarter of national credit and deposit market share.",
-    signal: "Moderate"
-  },
-
-  // --- DEFENSE & CAPITAL GOODS ---
   {
     symbol: "BEL",
     name: "Bharat Electronics Ltd",
@@ -122,132 +80,14 @@ export const STOCK_DATASET: StockItem[] = [
     roe: 25.4,
     pb: 11.2,
     evEbitda: 31.0,
-    description: "Navratna defense electronics powerhouse specializing in radar systems, electronic warfare, missile avionics, and naval communication gear.",
-    signal: "Strong"
-  },
-  {
-    symbol: "HAL",
-    name: "Hindustan Aeronautics Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "541154",
-    sector: "Defense & Aerospace",
-    price: 4620,
-    marketCap: "₹3,08,000 Cr",
-    pe: 38.2,
-    roe: 27.6,
-    pb: 9.8,
-    evEbitda: 26.5,
-    description: "Sole Indian domestic manufacturer of fighter aircraft, military helicopters, aero engines, and avionics assemblies.",
-    signal: "Strong"
-  },
-  {
-    symbol: "LT",
-    name: "Larsen & Toubro Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "500510",
-    sector: "Infrastructure & Heavy Engineering",
-    price: 3640,
-    marketCap: "₹5,00,000 Cr",
-    pe: 33.1,
-    roe: 15.6,
-    pb: 4.8,
-    evEbitda: 21.2,
-    description: "Multinational engineering conglomerate leading India's infrastructure capex cycle across transport, hydrocarbons, and green power.",
-    signal: "Strong"
-  },
-  {
-    symbol: "MARINE",
-    name: "Marine Electricals (India) Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "542146",
-    sector: "Defense & Marine Engineering",
-    price: 245,
-    marketCap: "₹3,250 Cr",
-    pe: 52.4,
-    roe: 16.2,
-    pb: 6.8,
-    evEbitda: 28.1,
-    description: "Integrated technical solutions provider for marine electrical switchgear, navigation panels, and power automation systems for naval warships.",
-    signal: "Watchlist"
-  },
-  {
-    symbol: "SONACOMS",
-    name: "Sona BLW Precision Forgings Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "543300",
-    sector: "Automotive & EV Technology",
-    price: 680,
-    marketCap: "₹40,500 Cr",
-    pe: 68.0,
-    roe: 19.5,
-    pb: 12.4,
-    evEbitda: 36.8,
-    description: "Global automotive technology supplier specializing in precision forged differential assemblies and traction motors for electric vehicles.",
-    signal: "Moderate"
-  },
-
-  // --- ENERGY, POWER & CONGLOMERATES ---
-  {
-    symbol: "RELIANCE",
-    name: "Reliance Industries Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "500325",
-    sector: "Conglomerate / Energy & Telecom",
-    price: 2980,
-    marketCap: "₹20,15,000 Cr",
-    pe: 27.1,
-    roe: 9.8,
-    pb: 2.5,
-    evEbitda: 15.4,
-    description: "Diversified leader operating India's largest refining-to-chemicals complex, 5G digital telecommunications (Jio), and nationwide retail.",
-    signal: "Strong"
-  },
-  {
-    symbol: "NTPC",
-    name: "NTPC Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "532555",
-    sector: "Power Generation & Clean Energy",
-    price: 415,
-    marketCap: "₹4,02,000 Cr",
-    pe: 18.2,
-    roe: 14.2,
-    pb: 2.3,
-    evEbitda: 10.5,
-    description: "India's largest thermal power generator aggressively transitioning toward a 60 GW green hydrogen and renewable capacity footprint.",
-    signal: "Strong"
-  },
-
-  // --- PHARMACEUTICALS & HEALTHCARE ---
-  {
-    symbol: "SUNPHARMA",
-    name: "Sun Pharmaceutical Industries Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "524715",
-    sector: "Pharmaceuticals",
-    price: 1840,
-    marketCap: "₹4,41,000 Cr",
-    pe: 39.5,
-    roe: 17.1,
-    pb: 6.4,
-    evEbitda: 25.2,
-    description: "Leading specialty pharmaceutical producer commanding high domestic market share alongside global branded dermatology formulations.",
-    signal: "Strong"
-  },
-  {
-    symbol: "SHILPAMED",
-    name: "Shilpa Medicare Ltd",
-    exchange: "NSE/BSE",
-    bseCode: "530549",
-    sector: "Pharmaceuticals & Oncology APIs",
-    price: 780,
-    marketCap: "₹7,650 Cr",
-    pe: 48.0,
-    roe: 11.2,
-    pb: 3.8,
-    evEbitda: 22.4,
-    description: "R&D-focused active pharmaceutical ingredient (API) manufacturer with specialized capabilities in oncology intermediates and peptide formulations.",
-    signal: "Watchlist"
+    description: "Navratna defense electronics powerhouse specializing in radar systems, electronic warfare, missile avionics, and naval communication systems.",
+    signal: "Strong",
+    quarters: [
+      { quarter: "Dec 2023", sales: 4162, expenses: 3110, operatingProfit: 1052, opmPercent: 25.3, netProfit: 859, eps: 1.18 },
+      { quarter: "Mar 2024", sales: 8335, expenses: 5860, operatingProfit: 2475, opmPercent: 29.7, netProfit: 1783, eps: 2.44 },
+      { quarter: "Jun 2024", sales: 4198, expenses: 3260, operatingProfit: 938, opmPercent: 22.3, netProfit: 776, eps: 1.06 },
+      { quarter: "Sep 2024", sales: 4583, expenses: 3340, operatingProfit: 1243, opmPercent: 27.1, netProfit: 1091, eps: 1.49 }
+    ]
   }
 ];
 
@@ -259,30 +99,33 @@ export function getStockBySymbol(rawSymbol: string): StockItem {
   );
   if (found) return found;
 
+  // Fallback generator for other tickers
   let hash = 0;
   for (let i = 0; i < clean.length; i++) {
     hash = (hash * 31 + clean.charCodeAt(i)) % 100000;
   }
 
-  const generatedPrice = 250 + (hash % 4200);
-  const generatedPe = Math.round((14 + (hash % 45)) * 10) / 10;
-  const generatedRoe = Math.round((10 + (hash % 28)) * 10) / 10;
-  const generatedPb = Math.round((1.8 + ((hash % 100) / 15)) * 10) / 10;
-  const generatedEv = Math.round((9 + (hash % 22)) * 10) / 10;
+  const baseSales = 2000 + (hash % 15000);
 
   return {
     symbol: clean,
     name: `${clean} Industries Ltd`,
     exchange: "NSE/BSE",
     sector: "Diversified Industrial",
-    price: generatedPrice,
+    price: 250 + (hash % 4200),
     marketCap: `₹${(Math.floor(hash * 1.5)).toLocaleString("en-IN")} Cr`,
-    pe: generatedPe,
-    roe: generatedRoe,
-    pb: generatedPb,
-    evEbitda: generatedEv,
-    description: `Equity analysis profile for ${clean} listed on Indian exchanges (NSE / BSE). Technical chart and DuPont model synthesized automatically.`,
-    signal: generatedRoe > 20 ? "Strong" : generatedRoe > 14 ? "Moderate" : "Watchlist",
+    pe: Math.round((14 + (hash % 45)) * 10) / 10,
+    roe: Math.round((10 + (hash % 28)) * 10) / 10,
+    pb: Math.round((1.8 + ((hash % 100) / 15)) * 10) / 10,
+    evEbitda: Math.round((9 + (hash % 22)) * 10) / 10,
+    description: `Equity analysis profile for ${clean} listed on Indian exchanges.`,
+    signal: "Moderate",
+    quarters: [
+      { quarter: "Dec 2023", sales: Math.round(baseSales * 0.9), expenses: Math.round(baseSales * 0.72), operatingProfit: Math.round(baseSales * 0.18), opmPercent: 20.0, netProfit: Math.round(baseSales * 0.12), eps: 12.4 },
+      { quarter: "Mar 2024", sales: Math.round(baseSales * 0.95), expenses: Math.round(baseSales * 0.75), operatingProfit: Math.round(baseSales * 0.20), opmPercent: 21.0, netProfit: Math.round(baseSales * 0.14), eps: 13.8 },
+      { quarter: "Jun 2024", sales: Math.round(baseSales * 1.0), expenses: Math.round(baseSales * 0.78), operatingProfit: Math.round(baseSales * 0.22), opmPercent: 22.0, netProfit: Math.round(baseSales * 0.15), eps: 14.5 },
+      { quarter: "Sep 2024", sales: Math.round(baseSales * 1.06), expenses: Math.round(baseSales * 0.81), operatingProfit: Math.round(baseSales * 0.25), opmPercent: 23.5, netProfit: Math.round(baseSales * 0.17), eps: 16.2 }
+    ]
   };
 }
 

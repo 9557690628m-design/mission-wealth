@@ -84,6 +84,86 @@ export default async function StockPage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* Screener-Style Quarterly Results Table */}
+        <div className="mb-10 rounded-2xl border border-white/10 bg-[#06101d] p-6 shadow-xl overflow-hidden">
+          <div className="border-b border-white/10 pb-4">
+            <h3 className="text-lg font-semibold text-white">Quarterly Financial Results</h3>
+            <p className="mt-1 text-xs text-slate-400">
+              Consolidated revenue, operating efficiency, and net margins (Figures in ₹ Crores)
+            </p>
+          </div>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-slate-400">
+                  <th className="py-3 px-4 font-medium">Financial Metric</th>
+                  {company.quarters.map((q) => (
+                    <th key={q.quarter} className="py-3 px-4 font-mono text-right text-slate-300">
+                      {q.quarter}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 font-mono text-xs">
+                <tr className="hover:bg-white/[0.02]">
+                  <td className="py-3 px-4 font-sans font-medium text-slate-200">Sales / Revenue</td>
+                  {company.quarters.map((q) => (
+                    <td key={q.quarter} className="py-3 px-4 text-right text-white">
+                      ₹{q.sales.toLocaleString("en-IN")}
+                    </td>
+                  ))}
+                </tr>
+
+                <tr className="hover:bg-white/[0.02]">
+                  <td className="py-3 px-4 font-sans text-slate-400">Operating Expenses</td>
+                  {company.quarters.map((q) => (
+                    <td key={q.quarter} className="py-3 px-4 text-right text-slate-400">
+                      ₹{q.expenses.toLocaleString("en-IN")}
+                    </td>
+                  ))}
+                </tr>
+
+                <tr className="bg-white/[0.02] font-semibold">
+                  <td className="py-3 px-4 font-sans text-emerald-400">Operating Profit (EBITDA)</td>
+                  {company.quarters.map((q) => (
+                    <td key={q.quarter} className="py-3 px-4 text-right text-emerald-400">
+                      ₹{q.operatingProfit.toLocaleString("en-IN")}
+                    </td>
+                  ))}
+                </tr>
+
+                <tr className="hover:bg-white/[0.02]">
+                  <td className="py-3 px-4 font-sans text-slate-300">OPM % (Operating Margin)</td>
+                  {company.quarters.map((q) => (
+                    <td key={q.quarter} className="py-3 px-4 text-right text-amber-300">
+                      {q.opmPercent.toFixed(1)}%
+                    </td>
+                  ))}
+                </tr>
+
+                <tr className="hover:bg-white/[0.02] font-semibold">
+                  <td className="py-3 px-4 font-sans text-white">Net Profit (PAT)</td>
+                  {company.quarters.map((q) => (
+                    <td key={q.quarter} className="py-3 px-4 text-right text-white">
+                      ₹{q.netProfit.toLocaleString("en-IN")}
+                    </td>
+                  ))}
+                </tr>
+
+                <tr className="hover:bg-white/[0.02]">
+                  <td className="py-3 px-4 font-sans text-slate-400">EPS in ₹</td>
+                  {company.quarters.map((q) => (
+                    <td key={q.quarter} className="py-3 px-4 text-right text-slate-300">
+                      ₹{q.eps}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* 3-Stage DuPont ROE Decomposition */}
         <div className="rounded-2xl border border-white/10 bg-[#06101d] p-6 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-4">
