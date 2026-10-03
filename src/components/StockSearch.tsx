@@ -1,167 +1,110 @@
-// src/components/StockSearch.tsx
-"use client";
+﻿"use client";
 
-import { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-const stockData = [
-  {
-    symbol: "hdfcbank",
-    company: "HDFC Bank",
-    price: "₹1,720",
-    pe: "18.4",
-    roe: "16.8%",
-    signal: "Strong",
-  },
-  {
-    symbol: "tcs",
-    company: "TCS",
-    price: "₹3,980",
-    pe: "29.2",
-    roe: "51.4%",
-    signal: "Strong",
-  },
-  {
-    symbol: "reliance",
-    company: "Reliance Industries",
-    price: "₹2,850",
-    pe: "24.6",
-    roe: "9.8%",
-    signal: "Positive",
-  },
-  {
-    symbol: "lt",
-    company: "Larsen & Toubro",
-    price: "₹3,650",
-    pe: "31.5",
-    roe: "14.2%",
-    signal: "Positive",
-  },
-  {
-    symbol: "infosys",
-    company: "Infosys",
-    price: "₹1,620",
-    pe: "25.8",
-    roe: "29.6%",
-    signal: "Neutral",
-  },
-];
+import { searchStocks, StockItem } from "../data/stocks";
 
 export default function StockSearch() {
-  const [stockSearch, setStockSearch] = useState("");
-  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [results, setResults] = useState<StockItem[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Search by either company name or ticker symbol
-  const filteredStocks = stockData.filter(
-    (stock) =>
-      stock.company.toLowerCase().includes(stockSearch.toLowerCase()) ||
-      stock.symbol.toLowerCase().includes(stockSearch.toLowerCase())
-  );
+  useEffect(() => {
+    setResults(searchStocks(query));
+  }, [query]);
 
-  // Allow pressing Enter to analyze any ticker directly
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && stockSearch.trim()) {
-      e.preventDefault();
-      router.push(`/stocks/${encodeURIComponent(stockSearch.trim().toLowerCase())}`);
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
     }
-  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <>
-      {/* Search Box */}
-      <div className="w-full md:w-80">
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3">
-          <div className="text-xs uppercase tracking-wider text-slate-500">
-            Search Stock
-          </div>
+    <div ref={containerRef} className="relative w-full max-w-xl">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          placeholder="Search NSE/BSE symbol, scrip code, or company..."
+          className="w-full rounded-xl border border-white/10 bg-[#06101d] px-4 py-3 pl-11 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+        />
+        <svg
+          className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+      </div>
 
-          <div className="mt-1 flex items-center justify-between">
-            <input
-              id="stock-search"
-              type="text"
-              value={stockSearch}
-              onChange={(e) => setStockSearch(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search or type ticker + Enter"
-              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            />
-            {stockSearch.trim() && (
-              <button
-                onClick={() =>
-                  router.push(`/stocks/${encodeURIComponent(stockSearch.trim().toLowerCase())}`)
-                }
-                className="ml-2 rounded bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-300 hover:bg-white/20 hover:text-white"
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-50 mt-2 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-[#06101d] p-2 shadow-2xl backdrop-blur-md">
+          {results.length > 0 ? (
+            results.map((stock) => (
+              <Link
+                key={stock.symbol}
+                href={`/stocks/${stock.symbol.toLowerCase()}`}
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-between rounded-lg p-2.5 transition hover:bg-white/5"
               >
-                Go
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Stock Table */}
-      <div className="mt-8 overflow-hidden rounded-2xl border border-white/10">
-        {/* Table Header */}
-        <div className="hidden grid-cols-6 border-b border-white/10 bg-white/[0.04] px-6 py-4 text-xs uppercase tracking-wider text-slate-500 md:grid">
-          <div className="col-span-2">Company</div>
-          <div>Price</div>
-          <div>P/E</div>
-          <div>ROE</div>
-          <div>TECH-FUNDA</div>
-        </div>
-
-        {/* Stock Rows */}
-        {filteredStocks.length > 0 ? (
-          filteredStocks.map(({ symbol, company, price, pe, roe, signal }) => (
-            <div
-              key={company}
-              className="grid gap-4 border-b border-white/10 px-6 py-5 transition last:border-b-0 hover:bg-white/[0.05] md:grid-cols-6 md:items-center"
-            >
-              <div className="md:col-span-2">
-                <div className="font-semibold text-white">{company}</div>
-                <div className="mt-1 text-xs text-slate-500">NSE • Equity</div>
-              </div>
-
-              <div>
-                <div className="text-sm font-medium text-white">{price}</div>
-                <div className="mt-1 text-xs text-emerald-400">+1.24%</div>
-              </div>
-
-              <div className="text-sm text-slate-300">{pe}</div>
-
-              <div className="text-sm text-slate-300">{roe}</div>
-
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 text-xs font-medium text-emerald-300">
-                  {signal}
-                </span>
-
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-semibold text-emerald-400">
+                      {stock.symbol}
+                    </span>
+                    <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-slate-400">
+                      {stock.exchange}
+                    </span>
+                    {stock.bseCode && (
+                      <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-slate-500">
+                        BSE: {stock.bseCode}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-400">{stock.name}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-xs font-semibold text-white">
+                    ₹{stock.price.toLocaleString("en-IN")}
+                  </div>
+                  <div className="text-[10px] text-slate-500">{stock.sector}</div>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="p-4 text-center">
+              <p className="text-xs text-slate-400">
+                No indexed match for &quot;{query}&quot;.
+              </p>
+              {query.trim().length > 0 && (
                 <Link
-                  href={`/stocks/${symbol}`}
-                  className="text-xs font-medium text-slate-400 transition hover:text-white"
+                  href={`/stocks/${query.trim().toLowerCase()}`}
+                  onClick={() => setIsOpen(false)}
+                  className="mt-2 inline-block rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-300 hover:bg-emerald-400/20"
                 >
-                  Research →
+                  Analyze &quot;{query.toUpperCase()}&quot; via Dynamic Engine →
                 </Link>
-              </div>
+              )}
             </div>
-          ))
-        ) : (
-          <div className="p-8 text-center">
-            <p className="text-sm text-slate-400">
-              No preset found for &ldquo;{stockSearch}&rdquo;.
-            </p>
-            <button
-              onClick={() =>
-                router.push(`/stocks/${encodeURIComponent(stockSearch.trim().toLowerCase())}`)
-              }
-              className="mt-3 inline-flex items-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20"
-            >
-              Run Deep Analysis on &ldquo;{stockSearch.toUpperCase()}&rdquo; →
-            </button>
-          </div>
-        )}
-      </div>
-    </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
