@@ -1,6 +1,7 @@
 // src/app/stocks/[symbol]/page.tsx
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import TradingViewWidget from "@/components/TradingViewWidget";
 
 type CompanyPageProps = {
   params: Promise<{
@@ -340,6 +341,15 @@ export default async function CompanyPage({ params }: CompanyPageProps) {
             {company.description}
           </p>
         </div>
+      </section>
+
+            {/* Live TradingView Technical Chart */}
+      <section className="mx-auto max-w-7xl px-6 pt-10">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-white">Live Technical Chart</h2>
+          <p className="text-xs text-slate-400">Interactive Candlestick Chart (NSE:{company.symbol.toUpperCase()})</p>
+        </div>
+        <TradingViewWidget symbol={company.symbol} />
       </section>
 
       {/* Valuation Metrics Bar */}
