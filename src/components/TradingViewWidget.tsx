@@ -1,7 +1,7 @@
 "use client";
 
 import type { HistoricalPrice } from "@/lib/market/types";
-
+import { calculateMovingAverageSeries } from "@/lib/market/calculations";
 interface TradingViewWidgetProps {
   symbol: string;
   prices: HistoricalPrice[];
@@ -57,6 +57,8 @@ const marketSymbol = rawSymbol.replace(/^(NSE:|BSE:)/, "");
   }
 
   const closes = prices.map((price) => price.close);
+const dma50 = calculateMovingAverageSeries(prices, 50);
+const dma200 = calculateMovingAverageSeries(prices, 200);
 
   const minPrice = Math.min(...closes);
   const maxPrice = Math.max(...closes);
@@ -99,6 +101,23 @@ const marketSymbol = rawSymbol.replace(/^(NSE:|BSE:)/, "");
         `${getX(index)},${getY(price.close)}`
     )
     .join(" ");
+const dma50Points = dma50
+  .map((value, index) =>
+    value === null
+      ? null
+      : `${getX(index)},${getY(value)}`
+  )
+  .filter((point): point is string => point !== null)
+  .join(" ");
+
+const dma200Points = dma200
+  .map((value, index) =>
+    value === null
+      ? null
+      : `${getX(index)},${getY(value)}`
+  )
+  .filter((point): point is string => point !== null)
+  .join(" ");
 
   const first = prices[0];
   const latest = prices[prices.length - 1];
@@ -204,6 +223,29 @@ const marketSymbol = rawSymbol.replace(/^(NSE:|BSE:)/, "");
             className="text-white/10"
           />
 
+          {dma200Points && (
+  <polyline
+    points={dma200Points}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinejoin="round"
+    strokeLinecap="round"
+    className="text-sky-400"
+  />
+)}
+
+{dma50Points && (
+  <polyline
+    points={dma50Points}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinejoin="round"
+    strokeLinecap="round"
+    className="text-amber-400"
+  />
+)}
           <polyline
             points={linePoints}
             fill="none"
@@ -253,7 +295,7 @@ const marketSymbol = rawSymbol.replace(/^(NSE:|BSE:)/, "");
             className="text-slate-500"
             fontSize="12"
           >
-            ?{maxPrice.toLocaleString("en-IN")}
+            ₹{maxPrice.toLocaleString("en-IN")}
           </text>
 
           <text
@@ -263,14 +305,30 @@ const marketSymbol = rawSymbol.replace(/^(NSE:|BSE:)/, "");
             className="text-slate-500"
             fontSize="12"
           >
-            ?{minPrice.toLocaleString("en-IN")}
+           ₹{minPrice.toLocaleString("en-IN")}
           </text>
-        </svg>
-      </div>
+      </svg>
+</div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3 text-xs text-slate-500">
+<div className="mt-3 flex flex-wrap gap-4 text-xs">
+  <span className="text-emerald-400">
+    Price
+  </span>
+
+  <span className="text-amber-400">
+    50-DMA
+  </span>
+
+  {dma200.some((value) => value !== null) && (
+    <span className="text-sky-400">
+      200-DMA
+    </span>
+  )}
+</div>
+
+<div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3 text-xs text-slate-500">
         <span>
-          Historical range: {first.date} ? {latest.date}
+        Historical range: {first.date} → {latest.date}
         </span>
 
         <span>
