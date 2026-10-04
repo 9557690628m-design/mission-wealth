@@ -1,4 +1,5 @@
-﻿import { notFound } from "next/navigation";
+﻿import { getMarketDataProvider } from "@/lib/market";
+import { notFound } from "next/navigation";
 import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
 import { getStockIdentity } from "@/lib/market/stocks";
@@ -11,9 +12,13 @@ export default async function StockPage({ params }: PageProps) {
   const { symbol } = await params;
   const company = getStockIdentity(symbol);
 
-  if (!company) {
-    notFound();
-  }
+
+if (!company) {
+  notFound();
+}
+
+const provider = getMarketDataProvider();
+const quote = await provider.getQuote(company.symbol);
 
   const exchangeLabel =
     company.nseSymbol && company.bseCode
@@ -80,30 +85,55 @@ export default async function StockPage({ params }: PageProps) {
               Market & Valuation
             </h2>
             <p className="mt-1 text-xs text-slate-400">
-              Verified market metrics will be displayed from the Mission Wealth
-              market-data provider.
+             Verified delayed market metrics will be displayed from the Mission Wealth
+market-data provider.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {[
-              "Current Market Price",
-              "Market Capitalisation",
-              "P/E Ratio",
-              "Price to Book",
-              "EV / EBITDA",
-            ].map((label) => (
-              <div
-                key={label}
-                className="rounded-xl border border-white/10 bg-[#06101d] p-4"
-              >
-                <div className="text-xs text-slate-400">{label}</div>
-                <div className="mt-2 text-sm font-semibold text-slate-500">
-                  Data unavailable
-                </div>
-              </div>
-            ))}
-          </div>
+<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+  <div className="rounded-xl border border-white/10 bg-[#06101d] p-4">
+    <div className="text-xs text-slate-400">
+      Latest EOD Price
+    </div>
+
+    {quote ? (
+      <>
+        <div className="mt-1 font-mono text-base font-semibold text-white">
+          ₹{quote.price.toLocaleString("en-IN")}
+        </div>
+
+        <div className="mt-1 text-[10px] text-slate-500">
+          {quote.source} • {quote.exchange} • EOD
+        </div>
+
+        <div className="mt-1 text-[10px] text-slate-600">
+          As of {new Date(quote.timestamp).toLocaleDateString("en-IN")}
+        </div>
+      </>
+    ) : (
+      <div className="mt-2 text-sm font-semibold text-slate-500">
+        Data unavailable
+      </div>
+    )}
+  </div>
+
+  {[
+    "Market Capitalisation",
+    "P/E Ratio",
+    "Price to Book",
+    "EV / EBITDA",
+  ].map((label) => (
+    <div
+      key={label}
+      className="rounded-xl border border-white/10 bg-[#06101d] p-4"
+    >
+      <div className="text-xs text-slate-400">{label}</div>
+      <div className="mt-2 text-sm font-semibold text-slate-500">
+        Data unavailable
+      </div>
+    </div>
+  ))}
+</div>
         </section>
 
         <section className="mb-10 rounded-2xl border border-white/10 bg-[#06101d] p-6">
