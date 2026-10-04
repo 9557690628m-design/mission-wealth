@@ -18,4 +18,22 @@ export const BEL_QUARTERLY_RESULTS: QuarterlyResult[] = [
     source:
       "Bharat Electronics Limited — Q1 FY2026-27 Results Press Release",
   },
+{
+  symbol: "BEL",
+  periodEnd: "2026-03-31",
+  fiscalYear: "FY2025-26",
+  quarter: "Q4",
+
+  revenue: 10177.17,
+  profitBeforeTax: 2903.82,
+  netProfit: 2203.16,
+  eps: 3.01,
+
+  currency: "INR",
+  unit: "crores",
+
+  reportedAt: "2026-05-19",
+  source:
+    "Bharat Electronics Limited — Q4 FY2025-26 Audited Financial Results",
+},
 ];

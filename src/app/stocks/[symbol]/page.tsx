@@ -37,6 +37,39 @@ const quarterlyResults =
 const latestQuarter =
   quarterlyResults[0] ?? null;
 
+const previousQuarter =
+  quarterlyResults[1] ?? null;
+
+const calculateGrowth = (
+  current?: number,
+  previous?: number
+): number | null => {
+  if (
+    current === undefined ||
+    previous === undefined ||
+    previous === 0
+  ) {
+    return null;
+  }
+
+  return ((current - previous) / previous) * 100;
+};
+
+const revenueGrowth = calculateGrowth(
+  latestQuarter?.revenue,
+  previousQuarter?.revenue
+);
+
+const pbtGrowth = calculateGrowth(
+  latestQuarter?.profitBeforeTax,
+  previousQuarter?.profitBeforeTax
+);
+
+const netProfitGrowth = calculateGrowth(
+  latestQuarter?.netProfit,
+  previousQuarter?.netProfit
+);
+
   const exchangeLabel =
     company.nseSymbol && company.bseCode
       ? "NSE / BSE"
@@ -188,6 +221,11 @@ market-data provider.
               ? `₹${latestQuarter.revenue.toLocaleString("en-IN")} Cr`
               : "Data unavailable"}
           </div>
+{revenueGrowth !== null && (
+  <div className="mt-2 text-xs text-slate-400">
+    QoQ: {revenueGrowth.toFixed(1)}%
+  </div>
+)}
         </div>
 
         <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
@@ -200,6 +238,11 @@ market-data provider.
               ? `₹${latestQuarter.profitBeforeTax.toLocaleString("en-IN")} Cr`
               : "Data unavailable"}
           </div>
+{pbtGrowth !== null && (
+  <div className="mt-2 text-xs text-slate-400">
+    QoQ: {pbtGrowth.toFixed(1)}%
+  </div>
+)}
         </div>
 
         <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
@@ -212,6 +255,11 @@ market-data provider.
               ? `₹${latestQuarter.netProfit.toLocaleString("en-IN")} Cr`
               : "Data unavailable"}
           </div>
+{netProfitGrowth !== null && (
+  <div className="mt-2 text-xs text-slate-400">
+    QoQ: {netProfitGrowth.toFixed(1)}%
+  </div>
+)}
         </div>
       </div>
 
