@@ -1,3 +1,4 @@
+import { BEL_QUARTERLY_RESULTS } from "@/data/financials/bel-quarterly";
 import { isFreshMarketData } from "./freshness";
 import type { MarketDataProvider } from "./provider";
 import type {
@@ -182,10 +183,18 @@ export class AlphaVantageProvider
   ): Promise<FundamentalSnapshot | null> {
     void symbol;
     return null;
-  }async getQuarterlyResults(
+  }
+async getQuarterlyResults(
   symbol: string
 ): Promise<QuarterlyResult[]> {
-  void symbol;
+  const normalizedSymbol = symbol
+    .trim()
+    .toUpperCase();
+
+  if (normalizedSymbol === "BEL") {
+    return BEL_QUARTERLY_RESULTS;
+  }
+
   return [];
 }
 }

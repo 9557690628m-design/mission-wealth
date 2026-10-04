@@ -31,6 +31,11 @@ const history = await provider.getHistoricalPrices(
   historyStart.toISOString().slice(0, 10),
   historyEnd.toISOString().slice(0, 10)
 );
+const quarterlyResults =
+  await provider.getQuarterlyResults(company.symbol);
+
+const latestQuarter =
+  quarterlyResults[0] ?? null;
 
   const exchangeLabel =
     company.nseSymbol && company.bseCode
@@ -151,21 +156,75 @@ market-data provider.
 </div>
         </section>
 
-        <section className="mb-10 rounded-2xl border border-white/10 bg-[#06101d] p-6">
-          <h2 className="text-lg font-semibold text-white">
-            Quarterly Financial Results
-          </h2>
+<section className="mb-10 rounded-2xl border border-white/10 bg-[#06101d] p-6">
+  <h2 className="text-lg font-semibold text-white">
+    Quarterly Financial Results
+  </h2>
 
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            Verified quarterly revenue, profitability, margins and EPS data
-            will be displayed here after the fundamental-data source is
-            connected.
-          </p>
+  <p className="mt-2 text-sm leading-6 text-slate-400">
+    Reported company financial data from verified disclosures.
+  </p>
 
-          <div className="mt-5 rounded-xl border border-white/5 bg-[#040c17] p-8 text-center text-sm text-slate-500">
-            Financial statement data unavailable
+  {latestQuarter ? (
+    <div className="mt-5">
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+        <span className="rounded border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 font-semibold text-emerald-300">
+          {latestQuarter.quarter}
+        </span>
+
+        <span>{latestQuarter.fiscalYear}</span>
+        <span>•</span>
+        <span>Period ended {latestQuarter.periodEnd}</span>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
+          <div className="text-xs text-slate-500">
+            Revenue from Operations
           </div>
-        </section>
+
+          <div className="mt-2 font-mono text-lg font-semibold text-white">
+            {latestQuarter.revenue !== undefined
+              ? `₹${latestQuarter.revenue.toLocaleString("en-IN")} Cr`
+              : "Data unavailable"}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
+          <div className="text-xs text-slate-500">
+            Profit Before Tax
+          </div>
+
+          <div className="mt-2 font-mono text-lg font-semibold text-white">
+            {latestQuarter.profitBeforeTax !== undefined
+              ? `₹${latestQuarter.profitBeforeTax.toLocaleString("en-IN")} Cr`
+              : "Data unavailable"}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
+          <div className="text-xs text-slate-500">
+            Net Profit
+          </div>
+
+          <div className="mt-2 font-mono text-lg font-semibold text-white">
+            {latestQuarter.netProfit !== undefined
+              ? `₹${latestQuarter.netProfit.toLocaleString("en-IN")} Cr`
+              : "Data unavailable"}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 text-xs text-slate-500">
+        Source: {latestQuarter.source}
+      </div>
+    </div>
+  ) : (
+    <div className="mt-5 rounded-xl border border-white/5 bg-[#040c17] p-8 text-center text-sm text-slate-500">
+      Financial statement data unavailable
+    </div>
+  )}
+</section>
 
         <section className="mb-10 rounded-2xl border border-white/10 bg-[#06101d] p-6">
           <h2 className="text-lg font-semibold text-white">
