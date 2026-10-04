@@ -86,17 +86,72 @@ export class AlphaVantageProvider implements MarketDataProvider {
     };
   }
 
-  async getHistoricalPrices(
-    symbol: string,
-    from: string,
-    to: string
-  ): Promise<HistoricalPrice[]> {
-    void symbol;
-    void from;
-    void to;
+ async getHistoricalPrices(
+  symbol: string,
+  from: string,
+  to: string
+): Promise<HistoricalPrice[]> {
+  const apiKey = process.env.ALPHAVANTAGE_API_KEY;
+
+  if (!apiKey) {
     return [];
   }
 
+  const alphaSymbol = `${symbol.toUpperCase()}.BSE`;
+
+  const url =
+    `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY` +
+    `&symbol=${encodeURIComponent(alphaSymbol)}` +
+    `&outputsize=compact` +
+    `&apikey=${encodeURIComponent(apiKey)}`;
+
+  const response = await fetch(url, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload =
+    (await response.json()) as AlphaVantageDailyResponse;
+
+  const series = payload["Time Series (Daily)"];
+
+  if (!series) {
+    return [];
+  }
+
+  return Object.entries(series)
+    .filter(([date]) => date >= from && date <= to)
+    .map(([date, values]) => {
+      const open = Number(values["1. open"]);
+      const high = Number(values["2. high"]);
+      const low = Number(values["3. low"]);
+      const close = Number(values["4. close"]);
+      const volume = Number(values["5. volume"]);
+
+      if (!Number.isFinite(close)) {
+        return null;
+      }
+
+      return {
+        date,
+        open: Number.isFinite(open) ? open : undefined,
+        high: Number.isFinite(high) ? high : undefined,
+        low: Number.isFinite(low) ? low : undefined,
+        close,
+        volume: Number.isFinite(volume)
+          ? volume
+          : undefined,
+      } satisfies HistoricalPrice;
+    })
+    .filter(
+      (price): price is HistoricalPrice =>
+        price !== null
+    )
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
   async getFundamentals(
     symbol: string
   ): Promise<FundamentalSnapshot | null> {
