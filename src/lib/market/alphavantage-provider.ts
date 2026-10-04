@@ -21,7 +21,9 @@ type AlphaVantageDailyResponse = {
   "Time Series (Daily)"?: AlphaVantageDailySeries;
 };
 
-export class AlphaVantageProvider implements MarketDataProvider {
+export class AlphaVantageProvider
+  implements MarketDataProvider
+{
   async getQuote(
     symbol: string
   ): Promise<MarketQuote | null> {
@@ -56,7 +58,10 @@ export class AlphaVantageProvider implements MarketDataProvider {
       return null;
     }
 
-    const dates = Object.keys(series).sort().reverse();
+    const dates = Object.keys(series)
+      .sort()
+      .reverse();
+
     const latestDate = dates[0];
 
     if (!latestDate) {
@@ -68,6 +73,7 @@ export class AlphaVantageProvider implements MarketDataProvider {
     }
 
     const latest = series[latestDate];
+
     const close = Number(latest["4. close"]);
     const volume = Number(latest["5. volume"]);
 
@@ -79,52 +85,58 @@ export class AlphaVantageProvider implements MarketDataProvider {
       symbol: symbol.toUpperCase(),
       exchange: "BSE",
       price: close,
-      volume: Number.isFinite(volume) ? volume : undefined,
+      volume: Number.isFinite(volume)
+        ? volume
+        : undefined,
       timestamp: latestDate,
       source: "Alpha Vantage",
       isDelayed: true,
     };
   }
 
- async getHistoricalPrices(
-  symbol: string,
-  from: string,
-  to: string
-): Promise<HistoricalPrice[]> {
-  const apiKey = process.env.ALPHAVANTAGE_API_KEY;
+  async getHistoricalPrices(
+    symbol: string,
+    from: string,
+    to: string
+  ): Promise<HistoricalPrice[]> {
+    const apiKey = process.env.ALPHAVANTAGE_API_KEY;
 
-  if (!apiKey) {
-    return [];
-  }
+    if (!apiKey) {
+      return [];
+    }
 
-  const alphaSymbol = `${symbol.toUpperCase()}.BSE`;
+    const alphaSymbol = `${symbol.toUpperCase()}.BSE`;
 
-  const url =
-    `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY` +
-    `&symbol=${encodeURIComponent(alphaSymbol)}` +
-    `&outputsize=compact` +
-    `&apikey=${encodeURIComponent(apiKey)}`;
+    const url =
+      `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY` +
+      `&symbol=${encodeURIComponent(alphaSymbol)}` +
+      `&outputsize=compact` +
+      `&apikey=${encodeURIComponent(apiKey)}`;
 
-  const response = await fetch(url, {
-    cache: "no-store",
-  });
+    const response = await fetch(url, {
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
-    return [];
-  }
+    if (!response.ok) {
+      return [];
+    }
 
-  const payload =
-    (await response.json()) as AlphaVantageDailyResponse;
+    const payload =
+      (await response.json()) as AlphaVantageDailyResponse;
 
-  const series = payload["Time Series (Daily)"];
+    const series = payload["Time Series (Daily)"];
 
-  if (!series) {
-    return [];
-  }
+    if (!series) {
+      return [];
+    }
 
-  return Object.entries(series)
-    .filter(([date]) => date >= from && date <= to)
-    .map(([date, values]) => {
+    const prices: HistoricalPrice[] = [];
+
+    for (const [date, values] of Object.entries(series)) {
+      if (date < from || date > to) {
+        continue;
+      }
+
       const open = Number(values["1. open"]);
       const high = Number(values["2. high"]);
       const low = Number(values["3. low"]);
@@ -132,26 +144,38 @@ export class AlphaVantageProvider implements MarketDataProvider {
       const volume = Number(values["5. volume"]);
 
       if (!Number.isFinite(close)) {
-        return null;
+        continue;
       }
 
-      return {
+      const price: HistoricalPrice = {
         date,
-        open: Number.isFinite(open) ? open : undefined,
-        high: Number.isFinite(high) ? high : undefined,
-        low: Number.isFinite(low) ? low : undefined,
         close,
-        volume: Number.isFinite(volume)
-          ? volume
-          : undefined,
-      } satisfies HistoricalPrice;
-    })
-    .filter(
-      (price): price is HistoricalPrice =>
-        price !== null
-    )
-    .sort((a, b) => a.date.localeCompare(b.date));
-}
+      };
+
+      if (Number.isFinite(open)) {
+        price.open = open;
+      }
+
+      if (Number.isFinite(high)) {
+        price.high = high;
+      }
+
+      if (Number.isFinite(low)) {
+        price.low = low;
+      }
+
+      if (Number.isFinite(volume)) {
+        price.volume = volume;
+      }
+
+      prices.push(price);
+    }
+
+    return prices.sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+  }
+
   async getFundamentals(
     symbol: string
   ): Promise<FundamentalSnapshot | null> {

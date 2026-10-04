@@ -19,6 +19,11 @@ if (!company) {
 
 const provider = getMarketDataProvider();
 const quote = await provider.getQuote(company.symbol);
+const history = await provider.getHistoricalPrices(
+  company.symbol,
+  "2026-07-01",
+  "2026-10-01"
+);
 
   const exchangeLabel =
     company.nseSymbol && company.bseCode
@@ -76,7 +81,10 @@ const quote = await provider.getQuote(company.symbol);
         </div>
 
         <div className="mb-10">
-          <StockChart symbol={company.symbol} />
+         <StockChart
+  symbol={company.symbol}
+  prices={history}
+/>
         </div>
 
         <section className="mb-10">
