@@ -4,6 +4,7 @@ import type {
   FundamentalSnapshot,
   HistoricalPrice,
   MarketQuote,
+QuarterlyResult,
 } from "./types";
 
 type AlphaVantageDailySeries = Record<
@@ -181,5 +182,10 @@ export class AlphaVantageProvider
   ): Promise<FundamentalSnapshot | null> {
     void symbol;
     return null;
-  }
+  }async getQuarterlyResults(
+  symbol: string
+): Promise<QuarterlyResult[]> {
+  void symbol;
+  return [];
+}
 }
