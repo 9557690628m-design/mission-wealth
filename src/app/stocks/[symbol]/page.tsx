@@ -19,10 +19,17 @@ if (!company) {
 
 const provider = getMarketDataProvider();
 const quote = await provider.getQuote(company.symbol);
+const historyEnd = new Date();
+
+const historyStart = new Date();
+historyStart.setFullYear(
+  historyStart.getFullYear() - 1
+);
+
 const history = await provider.getHistoricalPrices(
   company.symbol,
-  "2026-07-01",
-  "2026-10-01"
+  historyStart.toISOString().slice(0, 10),
+  historyEnd.toISOString().slice(0, 10)
 );
 
   const exchangeLabel =

@@ -1,18 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import type { HistoricalPrice } from "@/lib/market/types";
 import { calculateMovingAverageSeries } from "@/lib/market/calculations";
 interface TradingViewWidgetProps {
   symbol: string;
   prices: HistoricalPrice[];
 }
-
+type ChartRange = "1M" | "3M" | "MAX";
 export default function StockChart({
   symbol,
   prices,
 }: TradingViewWidgetProps) {
   const rawSymbol = symbol.trim().toUpperCase();
 const marketSymbol = rawSymbol.replace(/^(NSE:|BSE:)/, "");
+const [range, setRange] = useState<ChartRange>("3M");
 
   const tradingViewUrl =
    `https://in.tradingview.com/chart/?symbol=BSE:${encodeURIComponent(
@@ -56,9 +58,16 @@ const marketSymbol = rawSymbol.replace(/^(NSE:|BSE:)/, "");
     );
   }
 
-  const closes = prices.map((price) => price.close);
-const dma50 = calculateMovingAverageSeries(prices, 50);
-const dma200 = calculateMovingAverageSeries(prices, 200);
+  const filteredPrices =
+  range === "1M"
+    ? prices.slice(-22)
+    : range === "3M"
+      ? prices.slice(-66)
+      : prices;
+
+const closes = filteredPrices.map((price) => price.close);
+const dma50 = calculateMovingAverageSeries(filteredPrices, 50);
+const dma200 = calculateMovingAverageSeries(filteredPrices, 200);
 
   const minPrice = Math.min(...closes);
   const maxPrice = Math.max(...closes);
@@ -81,13 +90,13 @@ const dma200 = calculateMovingAverageSeries(prices, 200);
     height - paddingTop - paddingBottom;
 
   const getX = (index: number) => {
-    if (prices.length === 1) {
+    if (filteredPrices.length === 1) {
       return width / 2;
     }
 
     return (
       paddingLeft +
-      (index / (prices.length - 1)) * chartWidth
+      (index / (filteredPrices.length - 1)) * chartWidth
     );
   };
 
@@ -95,12 +104,12 @@ const dma200 = calculateMovingAverageSeries(prices, 200);
     paddingTop +
     ((maxPrice - price) / priceRange) * chartHeight;
 
-  const linePoints = prices
-    .map(
-      (price, index) =>
-        `${getX(index)},${getY(price.close)}`
-    )
-    .join(" ");
+ const linePoints = filteredPrices
+  .map(
+    (price, index) =>
+      `${getX(index)},${getY(price.close)}`
+  )
+  .join(" ");
 const dma50Points = dma50
   .map((value, index) =>
     value === null
@@ -119,8 +128,8 @@ const dma200Points = dma200
   .filter((point): point is string => point !== null)
   .join(" ");
 
-  const first = prices[0];
-  const latest = prices[prices.length - 1];
+const first = filteredPrices[0];
+const latest = filteredPrices[filteredPrices.length - 1];
 
   const change =
     latest.close - first.close;
@@ -140,7 +149,7 @@ const dma200Points = dma200
             </h3>
 
             <span className="rounded border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 font-mono text-xs font-medium text-emerald-400">
-              NSE:{marketSymbol}
+              BSE:{marketSymbol}
             </span>
           </div>
 
@@ -148,7 +157,22 @@ const dma200Points = dma200
             Verified historical closing prices
           </p>
         </div>
-
+<div className="flex items-center gap-2">
+  {(["1M", "3M", "MAX"] as ChartRange[]).map((option) => (
+    <button
+      key={option}
+      type="button"
+      onClick={() => setRange(option)}
+      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+        range === option
+          ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
+          : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:text-white"
+      }`}
+    >
+      {option}
+    </button>
+  ))}
+</div>
         <a
           href={tradingViewUrl}
           target="_blank"
@@ -193,7 +217,7 @@ const dma200Points = dma200
           </div>
 
           <div className="mt-1 font-mono text-lg font-semibold text-white">
-            {prices.length}
+            {filteredPrices.length}
           </div>
         </div>
       </div>
@@ -256,7 +280,7 @@ const dma200Points = dma200
             className="text-emerald-400"
           />
 
-          {prices.map((price, index) => (
+          {filteredPrices.map((price, index) => (
             <circle
               key={price.date}
               cx={getX(index)}
