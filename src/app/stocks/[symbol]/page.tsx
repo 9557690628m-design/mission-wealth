@@ -210,6 +210,15 @@ market-data provider.
         <span>Period ended {latestQuarter.periodEnd}</span>
       </div>
 
+
+{previousQuarter && (
+  <div className="mb-4 text-xs text-slate-500">
+    QoQ comparison vs {previousQuarter.quarter}{" "}
+    {previousQuarter.fiscalYear} — period ended{" "}
+    {previousQuarter.periodEnd}
+  </div>
+)}
+
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
           <div className="text-xs text-slate-500">
