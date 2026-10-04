@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { searchStocks, StockItem } from "../data/stocks";
+import { searchStockIdentities } from "@/lib/market/stocks";
+import type { StockIdentity } from "@/lib/market/types";
 
 export default function StockSearch() {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const results: StockItem[] = searchStocks(query);
+  const results: StockIdentity[] = searchStockIdentities(query);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export default function StockSearch() {
             results.map((stock) => (
               <Link
                 key={stock.symbol}
-                href={`/stocks/${stock.symbol.toLowerCase()}`}
+               href={`/stocks/${stock.slug}`}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-between rounded-lg p-2.5 transition hover:bg-white/5"
               >
@@ -65,7 +66,7 @@ export default function StockSearch() {
                       {stock.symbol}
                     </span>
                     <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-slate-400">
-                      {stock.exchange}
+                    {stock.nseSymbol ? "NSE" : "BSE"}
                     </span>
                     {stock.bseCode && (
                       <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-slate-500">
@@ -75,12 +76,14 @@ export default function StockSearch() {
                   </div>
                   <div className="text-xs text-slate-400">{stock.name}</div>
                 </div>
-                <div className="text-right">
-                  <div className="font-mono text-xs font-semibold text-white">
-                    ₹{stock.price.toLocaleString("en-IN")}
-                  </div>
-                  <div className="text-[10px] text-slate-500">{stock.sector}</div>
-                </div>
+<div className="text-right">
+  <div className="text-[10px] text-slate-500">
+    {stock.industry || stock.sector}
+  </div>
+  <div className="text-[10px] text-slate-600">
+    {stock.sector}
+  </div>
+</div>
               </Link>
             ))
           ) : (

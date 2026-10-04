@@ -70,3 +70,23 @@ export function getStockIdentity(
       stock.bseCode === query
   );
 }
+export function searchStockIdentities(
+  query: string
+): StockIdentity[] {
+  const q = query.trim().toLowerCase();
+
+  if (!q) {
+    return STOCK_MASTER.slice(0, 8);
+  }
+
+  return STOCK_MASTER.filter(
+    (stock) =>
+      stock.symbol.toLowerCase().includes(q) ||
+      stock.name.toLowerCase().includes(q) ||
+      stock.slug.toLowerCase().includes(q) ||
+      stock.nseSymbol?.toLowerCase().includes(q) ||
+      stock.bseCode?.includes(q) ||
+      stock.sector.toLowerCase().includes(q) ||
+      stock.industry?.toLowerCase().includes(q)
+  );
+}
