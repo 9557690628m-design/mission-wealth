@@ -141,56 +141,18 @@ export const STOCK_DATASET: StockItem[] = [
   }
 ];
 
-export function getStockBySymbol(rawSymbol: string): StockItem {
-  const clean = rawSymbol.toUpperCase().replace(/^(NSE:|BSE:|BOM:)/, "").trim();
+export function getStockBySymbol(rawSymbol: string): StockItem | undefined {
+  const clean = rawSymbol
+    .toUpperCase()
+    .replace(/^(NSE:|BSE:|BOM:)/, "")
+    .trim();
 
-  const found = STOCK_DATASET.find(
-    (s) => s.symbol.toUpperCase() === clean || s.bseCode === clean
+  return STOCK_DATASET.find(
+    (stock) =>
+      stock.symbol.toUpperCase() === clean ||
+      stock.bseCode === clean
   );
-  if (found) return found;
-
-  let hash = 0;
-  for (let i = 0; i < clean.length; i++) {
-    hash = (hash * 31 + clean.charCodeAt(i)) % 100000;
-  }
-
-  const baseSales = 2000 + (hash % 15000);
-
-  return {
-    symbol: clean,
-    name: `${clean} Industries Ltd`,
-    exchange: "NSE/BSE",
-    sector: "Diversified Industrial",
-    price: 250 + (hash % 4200),
-    marketCap: `₹${(Math.floor(hash * 1.5)).toLocaleString("en-IN")} Cr`,
-    pe: Math.round((14 + (hash % 45)) * 10) / 10,
-    roe: Math.round((10 + (hash % 28)) * 10) / 10,
-    pb: Math.round((1.8 + ((hash % 100) / 15)) * 10) / 10,
-    evEbitda: Math.round((9 + (hash % 22)) * 10) / 10,
-    description: `Equity analysis profile for ${clean} listed on Indian exchanges.`,
-    signal: "Moderate",
-    quarters: [
-      { quarter: "Dec 2023", sales: Math.round(baseSales * 0.9), expenses: Math.round(baseSales * 0.72), operatingProfit: Math.round(baseSales * 0.18), opmPercent: 20.0, netProfit: Math.round(baseSales * 0.12), eps: 12.4 },
-      { quarter: "Mar 2024", sales: Math.round(baseSales * 0.95), expenses: Math.round(baseSales * 0.75), operatingProfit: Math.round(baseSales * 0.20), opmPercent: 21.0, netProfit: Math.round(baseSales * 0.14), eps: 13.8 },
-      { quarter: "Jun 2024", sales: Math.round(baseSales * 1.0), expenses: Math.round(baseSales * 0.78), operatingProfit: Math.round(baseSales * 0.22), opmPercent: 22.0, netProfit: Math.round(baseSales * 0.15), eps: 14.5 },
-      { quarter: "Sep 2024", sales: Math.round(baseSales * 1.06), expenses: Math.round(baseSales * 0.81), operatingProfit: Math.round(baseSales * 0.25), opmPercent: 23.5, netProfit: Math.round(baseSales * 0.17), eps: 16.2 }
-    ],
-    guidance: {
-      stance: "Pragmatic",
-      targetRevenueGrowth: "Management expects 10% - 12% revenue expansion supported by capacity debottlenecking.",
-      marginOutlook: "Operating margins projected to remain stable within 18% - 21% ranges.",
-      capexAndExpansion: "Modernization capex planned over the next 18 months funded via internal cash flows.",
-      orderBookOrVisibility: "Healthy order pipeline providing steady 1.5 - 2.0 years of revenue visibility.",
-      concallHighlights: [
-        "Demand across key commercial client segments remains steady with stable raw material costs.",
-        "Management focused on working capital optimization to reduce cash conversion days.",
-        "Debt-to-equity ratio remains well within conservative internal thresholds."
-      ],
-      credibilityRating: "Moderate"
-    }
-  };
 }
-
 export function searchStocks(query: string): StockItem[] {
   if (!query || query.trim() === "") return STOCK_DATASET.slice(0, 8);
   const q = query.toLowerCase().trim();

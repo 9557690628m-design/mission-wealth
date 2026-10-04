@@ -7,12 +7,8 @@ import { searchStocks, StockItem } from "../data/stocks";
 export default function StockSearch() {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [results, setResults] = useState<StockItem[]>([]);
+  const results: StockItem[] = searchStocks(query);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setResults(searchStocks(query));
-  }, [query]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

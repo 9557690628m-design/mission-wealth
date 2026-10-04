@@ -1,5 +1,6 @@
 ﻿import React from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
 import { getStockBySymbol, STOCK_DATASET } from "@/data/stocks";
@@ -10,8 +11,11 @@ interface PageProps {
 
 export default async function StockPage({ params }: PageProps) {
   const { symbol } = await params;
-  const company = getStockBySymbol(symbol);
+ const company = getStockBySymbol(symbol);
 
+if (!company) {
+  notFound();
+}
   // Sector peer group
   const peers = STOCK_DATASET.filter((s) => s.symbol !== company.symbol && s.sector === company.sector);
   const displayPeers = peers.length > 0 ? peers : STOCK_DATASET.filter((s) => s.symbol !== company.symbol).slice(0, 3);
