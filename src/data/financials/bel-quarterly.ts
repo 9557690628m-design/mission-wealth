@@ -15,6 +15,14 @@ export const BEL_QUARTERLY_RESULTS: QuarterlyResult[] = [
     unit: "crores",
 
     reportedAt: "2026-07-27",
+sourceDetails: {
+  type: "company_filing",
+  name:
+    "Bharat Electronics Limited Q1 FY2026-27 Financial Results",
+  filingDate: "2026-07-27",
+  reportingBasis: "standalone",
+  auditStatus: "unaudited",
+},
     source:
       "Bharat Electronics Limited — Q1 FY2026-27 Results Press Release",
   },
@@ -33,6 +41,14 @@ export const BEL_QUARTERLY_RESULTS: QuarterlyResult[] = [
   unit: "crores",
 
   reportedAt: "2026-05-19",
+sourceDetails: {
+  type: "company_filing",
+  name:
+    "Bharat Electronics Limited Q4 FY2025-26 Audited Financial Results",
+  filingDate: "2026-05-19",
+  reportingBasis: "standalone",
+  auditStatus: "audited",
+},
   source:
     "Bharat Electronics Limited — Q4 FY2025-26 Audited Financial Results",
 },

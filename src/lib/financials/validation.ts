@@ -40,6 +40,39 @@ function hasOnlyFiniteNumbers(
   );
 }
 
+function hasValidSourceDetails(
+  result: QuarterlyResult
+): boolean {
+  const details = result.sourceDetails;
+
+  if (!details) {
+    return true;
+  }
+
+  if (!details.name.trim()) {
+    return false;
+  }
+
+  if (!isValidIsoDate(details.filingDate)) {
+    return false;
+  }
+
+  if (
+    details.documentReference !== undefined &&
+    !details.documentReference.trim()
+  ) {
+    return false;
+  }
+
+  if (
+    details.url !== undefined &&
+    !details.url.trim()
+  ) {
+    return false;
+  }
+
+  return true;
+}
 export function isValidQuarterlyResult(
   result: QuarterlyResult
 ): boolean {
@@ -58,13 +91,17 @@ export function isValidQuarterlyResult(
     return false;
   }
 
-  if (!result.source.trim()) {
-    return false;
-  }
+ if (!result.source.trim()) {
+  return false;
+}
 
-  if (result.currency !== "INR") {
-    return false;
-  }
+if (!hasValidSourceDetails(result)) {
+  return false;
+}
+
+if (result.currency !== "INR") {
+  return false;
+}
 
   if (!hasOnlyFiniteNumbers(result)) {
     return false;

@@ -1,3 +1,29 @@
+export type FinancialSourceType =
+  | "company_filing"
+  | "exchange_filing"
+  | "annual_report"
+  | "investor_presentation"
+  | "other";
+
+export type FinancialReportingBasis =
+  | "standalone"
+  | "consolidated";
+
+export type FinancialAuditStatus =
+  | "audited"
+  | "unaudited";
+
+export interface FinancialSource {
+  type: FinancialSourceType;
+  name: string;
+  filingDate: string;
+
+  reportingBasis: FinancialReportingBasis;
+  auditStatus: FinancialAuditStatus;
+
+  url?: string;
+  documentReference?: string;
+}
 export interface QuarterlyResult {
   symbol: string;
 
@@ -23,5 +49,8 @@ export interface QuarterlyResult {
   unit?: "rupees" | "lakhs" | "crores";
 
   reportedAt?: string;
+
+sourceDetails?: FinancialSource;
+
   source: string;
 }
