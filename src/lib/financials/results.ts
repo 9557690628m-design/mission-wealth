@@ -34,10 +34,27 @@ export async function getQuarterlyResults(
 
   const results = await loader();
 
-  return results.filter(
+  const validResults = results.filter(
     (result) =>
       result.symbol.trim().toUpperCase() ===
         normalizedSymbol &&
       isValidQuarterlyResult(result)
+  );
+
+  const uniqueResults: QuarterlyResult[] = [];
+  const seenPeriods = new Set<string>();
+
+  for (const result of validResults) {
+    if (seenPeriods.has(result.periodEnd)) {
+      continue;
+    }
+
+    seenPeriods.add(result.periodEnd);
+    uniqueResults.push(result);
+  }
+
+  return uniqueResults.sort(
+    (a, b) =>
+      b.periodEnd.localeCompare(a.periodEnd)
   );
 }
