@@ -4,7 +4,6 @@ import type {
   FundamentalSnapshot,
   HistoricalPrice,
   MarketQuote,
- QuarterlyResult,
 } from "./types";
 
 type MarketstackEodRecord = {
@@ -93,10 +92,4 @@ export class MarketstackProvider implements MarketDataProvider {
     void symbol;
     return null;
   }
-async getQuarterlyResults(
-  symbol: string
-): Promise<QuarterlyResult[]> {
-  void symbol;
-  return [];
-}
 }

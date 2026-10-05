@@ -3,7 +3,6 @@ import type {
   FundamentalSnapshot,
   HistoricalPrice,
   MarketQuote,
-  QuarterlyResult,
 } from "./types";
 
 export class NullMarketDataProvider implements MarketDataProvider {
@@ -33,10 +32,4 @@ export class NullMarketDataProvider implements MarketDataProvider {
     return null;
   }
 
-  async getQuarterlyResults(
-    symbol: string
-  ): Promise<QuarterlyResult[]> {
-    void symbol;
-    return [];
-  }
 }

@@ -1,4 +1,5 @@
-﻿import { getMarketDataProvider } from "@/lib/market";
+﻿import { getQuarterlyResults } from "@/lib/financials/results";
+import { getMarketDataProvider } from "@/lib/market";
 import { notFound } from "next/navigation";
 import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
@@ -32,7 +33,7 @@ const history = await provider.getHistoricalPrices(
   historyEnd.toISOString().slice(0, 10)
 );
 const quarterlyResults =
-  await provider.getQuarterlyResults(company.symbol);
+  await getQuarterlyResults(company.symbol);
 
 const latestQuarter =
   quarterlyResults[0] ?? null;

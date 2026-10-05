@@ -2,7 +2,6 @@ import type {
   FundamentalSnapshot,
   HistoricalPrice,
   MarketQuote,
-  QuarterlyResult,
 } from "./types";
 
 export interface MarketDataProvider {
@@ -20,7 +19,4 @@ export interface MarketDataProvider {
     symbol: string
   ): Promise<FundamentalSnapshot | null>;
 
-  getQuarterlyResults(
-    symbol: string
-  ): Promise<QuarterlyResult[]>;
-}
+  }
