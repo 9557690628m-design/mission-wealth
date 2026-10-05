@@ -1,4 +1,5 @@
 import type { QuarterlyResult } from "@/lib/financials/types";
+import { isValidQuarterlyResult } from "@/lib/financials/validation";
 
 type QuarterlyResultsLoader =
   () => Promise<QuarterlyResult[]>;
@@ -31,5 +32,12 @@ export async function getQuarterlyResults(
     return [];
   }
 
-  return loader();
+  const results = await loader();
+
+  return results.filter(
+    (result) =>
+      result.symbol.trim().toUpperCase() ===
+        normalizedSymbol &&
+      isValidQuarterlyResult(result)
+  );
 }
