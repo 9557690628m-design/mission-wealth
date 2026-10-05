@@ -1,4 +1,4 @@
-import type { QuarterlyResult } from "@/lib/market/types";
+import type { QuarterlyResult } from "@/lib/financials/types";
 
 export const BEL_QUARTERLY_RESULTS: QuarterlyResult[] = [
   {
