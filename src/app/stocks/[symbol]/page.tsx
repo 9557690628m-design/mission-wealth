@@ -1,5 +1,6 @@
 ﻿import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
+import { calculateQoQGrowth } from "@/lib/financials/calculations";
 import { getQuarterlyResults } from "@/lib/financials/results";
 import { getFinancialSource } from "@/lib/financials/sources";
 import { getMarketDataProvider } from "@/lib/market";
@@ -55,35 +56,17 @@ export default async function StockPage({
       latestQuarter?.sourceId
     );
 
-  const calculateGrowth = (
-    current?: number,
-    previous?: number
-  ): number | null => {
-    if (
-      current === undefined ||
-      previous === undefined ||
-      previous === 0
-    ) {
-      return null;
-    }
-
-    return (
-      ((current - previous) / previous) *
-      100
-    );
-  };
-
-  const revenueGrowth = calculateGrowth(
+  const revenueGrowth = calculateQoQGrowth(
     latestQuarter?.revenue,
     previousQuarter?.revenue
   );
 
-  const pbtGrowth = calculateGrowth(
+  const pbtGrowth = calculateQoQGrowth(
     latestQuarter?.profitBeforeTax,
     previousQuarter?.profitBeforeTax
   );
 
-  const netProfitGrowth = calculateGrowth(
+  const netProfitGrowth = calculateQoQGrowth(
     latestQuarter?.netProfit,
     previousQuarter?.netProfit
   );
@@ -291,9 +274,7 @@ export default async function StockPage({
                   {revenueGrowth !== null && (
                     <div className="mt-2 text-xs text-slate-400">
                       QoQ:{" "}
-                      {revenueGrowth.toFixed(
-                        1
-                      )}
+                      {revenueGrowth.toFixed(1)}
                       %
                     </div>
                   )}
