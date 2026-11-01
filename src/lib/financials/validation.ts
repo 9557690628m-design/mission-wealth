@@ -1,3 +1,4 @@
+import { FINANCIAL_SOURCES } from "@/data/financials/sources";
 import type { QuarterlyResult } from "./types";
 
 const ISO_DATE_PATTERN =
@@ -73,6 +74,23 @@ function hasValidSourceDetails(
 
   return true;
 }
+
+function hasValidSourceId(
+  result: QuarterlyResult
+): boolean {
+  if (result.sourceId === undefined) {
+    return true;
+  }
+
+  const sourceId = result.sourceId.trim();
+
+  if (!sourceId) {
+    return false;
+  }
+
+  return sourceId in FINANCIAL_SOURCES;
+}
+
 export function isValidQuarterlyResult(
   result: QuarterlyResult
 ): boolean {
@@ -91,17 +109,21 @@ export function isValidQuarterlyResult(
     return false;
   }
 
- if (!result.source.trim()) {
-  return false;
-}
+  if (!result.source.trim()) {
+    return false;
+  }
 
-if (!hasValidSourceDetails(result)) {
-  return false;
-}
+  if (!hasValidSourceId(result)) {
+    return false;
+  }
 
-if (result.currency !== "INR") {
-  return false;
-}
+  if (!hasValidSourceDetails(result)) {
+    return false;
+  }
+
+  if (result.currency !== "INR") {
+    return false;
+  }
 
   if (!hasOnlyFiniteNumbers(result)) {
     return false;

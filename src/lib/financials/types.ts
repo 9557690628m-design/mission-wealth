@@ -50,7 +50,8 @@ export interface QuarterlyResult {
 
   reportedAt?: string;
 
+sourceId?: string;
 sourceDetails?: FinancialSource;
 
-  source: string;
+source: string;
 }

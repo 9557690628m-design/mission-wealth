@@ -15,41 +15,50 @@ export const BEL_QUARTERLY_RESULTS: QuarterlyResult[] = [
     unit: "crores",
 
     reportedAt: "2026-07-27",
-sourceDetails: {
-  type: "company_filing",
-  name:
-    "Bharat Electronics Limited Q1 FY2026-27 Financial Results",
-  filingDate: "2026-07-27",
-  reportingBasis: "standalone",
-  auditStatus: "unaudited",
-},
+
+    sourceId: "BEL-Q1-FY2026-27",
+
+    sourceDetails: {
+      type: "company_filing",
+      name:
+        "Bharat Electronics Limited Q1 FY2026-27 Financial Results",
+      filingDate: "2026-07-27",
+      reportingBasis: "standalone",
+      auditStatus: "unaudited",
+    },
+
     source:
-      "Bharat Electronics Limited — Q1 FY2026-27 Results Press Release",
+      "Bharat Electronics Limited - Q1 FY2026-27 Results Press Release",
   },
-{
-  symbol: "BEL",
-  periodEnd: "2026-03-31",
-  fiscalYear: "FY2025-26",
-  quarter: "Q4",
 
-  revenue: 10177.17,
-  profitBeforeTax: 2903.82,
-  netProfit: 2203.16,
-  eps: 3.01,
+  {
+    symbol: "BEL",
+    periodEnd: "2026-03-31",
+    fiscalYear: "FY2025-26",
+    quarter: "Q4",
 
-  currency: "INR",
-  unit: "crores",
+    revenue: 10177.17,
+    profitBeforeTax: 2903.82,
+    netProfit: 2203.16,
+    eps: 3.01,
 
-  reportedAt: "2026-05-19",
-sourceDetails: {
-  type: "company_filing",
-  name:
-    "Bharat Electronics Limited Q4 FY2025-26 Audited Financial Results",
-  filingDate: "2026-05-19",
-  reportingBasis: "standalone",
-  auditStatus: "audited",
-},
-  source:
-    "Bharat Electronics Limited — Q4 FY2025-26 Audited Financial Results",
-},
+    currency: "INR",
+    unit: "crores",
+
+    reportedAt: "2026-05-19",
+
+    sourceId: "BEL-Q4-FY2025-26",
+
+    sourceDetails: {
+      type: "company_filing",
+      name:
+        "Bharat Electronics Limited Q4 FY2025-26 Audited Financial Results",
+      filingDate: "2026-05-19",
+      reportingBasis: "standalone",
+      auditStatus: "audited",
+    },
+
+    source:
+      "Bharat Electronics Limited - Q4 FY2025-26 Audited Financial Results",
+  },
 ];
