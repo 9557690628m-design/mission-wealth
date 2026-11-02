@@ -24,6 +24,7 @@ export interface FinancialSource {
   url?: string;
   documentReference?: string;
 }
+
 export interface QuarterlyResult {
   symbol: string;
 
@@ -50,8 +51,22 @@ export interface QuarterlyResult {
 
   reportedAt?: string;
 
-sourceId?: string;
-sourceDetails?: FinancialSource;
+  sourceId?: string;
+  sourceDetails?: FinancialSource;
 
-source: string;
+  source: string;
+}
+
+export interface FinancialDerivedMetrics {
+  revenueQoQGrowth: number | null;
+  profitBeforeTaxQoQGrowth: number | null;
+  netProfitQoQGrowth: number | null;
+
+  revenueYoYGrowth: number | null;
+  profitBeforeTaxYoYGrowth: number | null;
+  netProfitYoYGrowth: number | null;
+
+  operatingMargin: number | null;
+  profitBeforeTaxMargin: number | null;
+  netProfitMargin: number | null;
 }

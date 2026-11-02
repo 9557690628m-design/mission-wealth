@@ -1,3 +1,8 @@
+import type {
+  FinancialDerivedMetrics,
+  QuarterlyResult,
+} from "./types";
+
 export function calculatePercentageChange(
   current?: number,
   previous?: number
@@ -80,4 +85,61 @@ export function calculateNetProfitMargin(
     netProfit,
     revenue
   );
+}
+
+export function buildFinancialDerivedMetrics(
+  current: QuarterlyResult,
+  previousQuarter?: QuarterlyResult | null,
+  previousYearQuarter?: QuarterlyResult | null
+): FinancialDerivedMetrics {
+  return {
+    revenueQoQGrowth: calculateQoQGrowth(
+      current.revenue,
+      previousQuarter?.revenue
+    ),
+
+    profitBeforeTaxQoQGrowth:
+      calculateQoQGrowth(
+        current.profitBeforeTax,
+        previousQuarter?.profitBeforeTax
+      ),
+
+    netProfitQoQGrowth: calculateQoQGrowth(
+      current.netProfit,
+      previousQuarter?.netProfit
+    ),
+
+    revenueYoYGrowth: calculateYoYGrowth(
+      current.revenue,
+      previousYearQuarter?.revenue
+    ),
+
+    profitBeforeTaxYoYGrowth:
+      calculateYoYGrowth(
+        current.profitBeforeTax,
+        previousYearQuarter?.profitBeforeTax
+      ),
+
+    netProfitYoYGrowth: calculateYoYGrowth(
+      current.netProfit,
+      previousYearQuarter?.netProfit
+    ),
+
+    operatingMargin: calculateOperatingMargin(
+      current.operatingProfit,
+      current.revenue
+    ),
+
+    profitBeforeTaxMargin:
+      calculatePbtMargin(
+        current.profitBeforeTax,
+        current.revenue
+      ),
+
+    netProfitMargin:
+      calculateNetProfitMargin(
+        current.netProfit,
+        current.revenue
+      ),
+  };
 }
