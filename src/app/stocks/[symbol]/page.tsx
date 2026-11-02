@@ -1,6 +1,7 @@
 ﻿import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
 import { buildFinancialDerivedMetrics } from "@/lib/financials/calculations";
+import { getFinancialPeriodComparison } from "@/lib/financials/periods";
 import { getQuarterlyResults } from "@/lib/financials/results";
 import { getFinancialSource } from "@/lib/financials/sources";
 import { getMarketDataProvider } from "@/lib/market";
@@ -45,11 +46,13 @@ export default async function StockPage({
   const quarterlyResults =
     await getQuarterlyResults(company.symbol);
 
-  const latestQuarter =
-    quarterlyResults[0] ?? null;
-
-  const previousQuarter =
-    quarterlyResults[1] ?? null;
+  const {
+    current: latestQuarter,
+    previousQuarter,
+    previousYearQuarter,
+  } = getFinancialPeriodComparison(
+    quarterlyResults
+  );
 
   const latestQuarterSource =
     getFinancialSource(
@@ -60,7 +63,7 @@ export default async function StockPage({
     ? buildFinancialDerivedMetrics(
         latestQuarter,
         previousQuarter,
-        null
+        previousYearQuarter
       )
     : null;
 
@@ -272,6 +275,19 @@ export default async function StockPage({
                         %
                       </div>
                     )}
+
+                  {derivedMetrics?.revenueYoYGrowth !==
+                    null &&
+                    derivedMetrics?.revenueYoYGrowth !==
+                      undefined && (
+                      <div className="mt-1 text-xs text-slate-500">
+                        YoY:{" "}
+                        {derivedMetrics.revenueYoYGrowth.toFixed(
+                          1
+                        )}
+                        %
+                      </div>
+                    )}
                 </div>
 
                 <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
@@ -300,6 +316,19 @@ export default async function StockPage({
                         %
                       </div>
                     )}
+
+                  {derivedMetrics?.profitBeforeTaxYoYGrowth !==
+                    null &&
+                    derivedMetrics?.profitBeforeTaxYoYGrowth !==
+                      undefined && (
+                      <div className="mt-1 text-xs text-slate-500">
+                        YoY:{" "}
+                        {derivedMetrics.profitBeforeTaxYoYGrowth.toFixed(
+                          1
+                        )}
+                        %
+                      </div>
+                    )}
                 </div>
 
                 <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
@@ -323,6 +352,19 @@ export default async function StockPage({
                       <div className="mt-2 text-xs text-slate-400">
                         QoQ:{" "}
                         {derivedMetrics.netProfitQoQGrowth.toFixed(
+                          1
+                        )}
+                        %
+                      </div>
+                    )}
+
+                  {derivedMetrics?.netProfitYoYGrowth !==
+                    null &&
+                    derivedMetrics?.netProfitYoYGrowth !==
+                      undefined && (
+                      <div className="mt-1 text-xs text-slate-500">
+                        YoY:{" "}
+                        {derivedMetrics.netProfitYoYGrowth.toFixed(
                           1
                         )}
                         %
