@@ -18,6 +18,12 @@ const quarterlyResultsRegistry: Record<
   },
 };
 
+export function getQuarterlyResultSymbols(): string[] {
+  return Object.keys(
+    quarterlyResultsRegistry
+  ).sort();
+}
+
 export async function getQuarterlyResults(
   symbol: string
 ): Promise<QuarterlyResult[]> {
@@ -26,7 +32,9 @@ export async function getQuarterlyResults(
     .toUpperCase();
 
   const loader =
-    quarterlyResultsRegistry[normalizedSymbol];
+    quarterlyResultsRegistry[
+      normalizedSymbol
+    ];
 
   if (!loader) {
     return [];
@@ -36,7 +44,9 @@ export async function getQuarterlyResults(
 
   const validResults = results.filter(
     (result) =>
-      result.symbol.trim().toUpperCase() ===
+      result.symbol
+        .trim()
+        .toUpperCase() ===
         normalizedSymbol &&
       isValidQuarterlyResult(result)
   );
@@ -45,16 +55,25 @@ export async function getQuarterlyResults(
   const seenPeriods = new Set<string>();
 
   for (const result of validResults) {
-    if (seenPeriods.has(result.periodEnd)) {
+    if (
+      seenPeriods.has(
+        result.periodEnd
+      )
+    ) {
       continue;
     }
 
-    seenPeriods.add(result.periodEnd);
+    seenPeriods.add(
+      result.periodEnd
+    );
+
     uniqueResults.push(result);
   }
 
   return uniqueResults.sort(
     (a, b) =>
-      b.periodEnd.localeCompare(a.periodEnd)
+      b.periodEnd.localeCompare(
+        a.periodEnd
+      )
   );
 }
