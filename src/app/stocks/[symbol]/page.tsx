@@ -1,6 +1,6 @@
 ﻿import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
-import { calculateQoQGrowth } from "@/lib/financials/calculations";
+import { buildFinancialDerivedMetrics } from "@/lib/financials/calculations";
 import { getQuarterlyResults } from "@/lib/financials/results";
 import { getFinancialSource } from "@/lib/financials/sources";
 import { getMarketDataProvider } from "@/lib/market";
@@ -56,20 +56,13 @@ export default async function StockPage({
       latestQuarter?.sourceId
     );
 
-  const revenueGrowth = calculateQoQGrowth(
-    latestQuarter?.revenue,
-    previousQuarter?.revenue
-  );
-
-  const pbtGrowth = calculateQoQGrowth(
-    latestQuarter?.profitBeforeTax,
-    previousQuarter?.profitBeforeTax
-  );
-
-  const netProfitGrowth = calculateQoQGrowth(
-    latestQuarter?.netProfit,
-    previousQuarter?.netProfit
-  );
+  const derivedMetrics = latestQuarter
+    ? buildFinancialDerivedMetrics(
+        latestQuarter,
+        previousQuarter,
+        null
+      )
+    : null;
 
   const exchangeLabel =
     company.nseSymbol && company.bseCode
@@ -246,13 +239,9 @@ export default async function StockPage({
                 <div className="mb-4 text-xs text-slate-500">
                   QoQ comparison vs{" "}
                   {previousQuarter.quarter}{" "}
-                  {
-                    previousQuarter.fiscalYear
-                  }{" "}
+                  {previousQuarter.fiscalYear}{" "}
                   — period ended{" "}
-                  {
-                    previousQuarter.periodEnd
-                  }
+                  {previousQuarter.periodEnd}
                 </div>
               )}
 
@@ -271,13 +260,18 @@ export default async function StockPage({
                       : "Data unavailable"}
                   </div>
 
-                  {revenueGrowth !== null && (
-                    <div className="mt-2 text-xs text-slate-400">
-                      QoQ:{" "}
-                      {revenueGrowth.toFixed(1)}
-                      %
-                    </div>
-                  )}
+                  {derivedMetrics?.revenueQoQGrowth !==
+                    null &&
+                    derivedMetrics?.revenueQoQGrowth !==
+                      undefined && (
+                      <div className="mt-2 text-xs text-slate-400">
+                        QoQ:{" "}
+                        {derivedMetrics.revenueQoQGrowth.toFixed(
+                          1
+                        )}
+                        %
+                      </div>
+                    )}
                 </div>
 
                 <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
@@ -294,12 +288,18 @@ export default async function StockPage({
                       : "Data unavailable"}
                   </div>
 
-                  {pbtGrowth !== null && (
-                    <div className="mt-2 text-xs text-slate-400">
-                      QoQ:{" "}
-                      {pbtGrowth.toFixed(1)}%
-                    </div>
-                  )}
+                  {derivedMetrics?.profitBeforeTaxQoQGrowth !==
+                    null &&
+                    derivedMetrics?.profitBeforeTaxQoQGrowth !==
+                      undefined && (
+                      <div className="mt-2 text-xs text-slate-400">
+                        QoQ:{" "}
+                        {derivedMetrics.profitBeforeTaxQoQGrowth.toFixed(
+                          1
+                        )}
+                        %
+                      </div>
+                    )}
                 </div>
 
                 <div className="rounded-xl border border-white/5 bg-[#040c17] p-4">
@@ -316,15 +316,18 @@ export default async function StockPage({
                       : "Data unavailable"}
                   </div>
 
-                  {netProfitGrowth !== null && (
-                    <div className="mt-2 text-xs text-slate-400">
-                      QoQ:{" "}
-                      {netProfitGrowth.toFixed(
-                        1
-                      )}
-                      %
-                    </div>
-                  )}
+                  {derivedMetrics?.netProfitQoQGrowth !==
+                    null &&
+                    derivedMetrics?.netProfitQoQGrowth !==
+                      undefined && (
+                      <div className="mt-2 text-xs text-slate-400">
+                        QoQ:{" "}
+                        {derivedMetrics.netProfitQoQGrowth.toFixed(
+                          1
+                        )}
+                        %
+                      </div>
+                    )}
                 </div>
               </div>
 
