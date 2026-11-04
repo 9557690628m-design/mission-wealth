@@ -9,6 +9,11 @@ export function isFreshMarketData(
   }
 
   const now = Date.now();
+
+  if (dataTime > now) {
+    return false;
+  }
+
   const maxAgeMs =
     maxAgeDays * 24 * 60 * 60 * 1000;
 
