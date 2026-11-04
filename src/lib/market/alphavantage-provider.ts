@@ -45,24 +45,28 @@ export class AlphaVantageProvider
       `&outputsize=compact` +
       `&apikey=${encodeURIComponent(apiKey)}`;
 
-    const response = await fetch(url, {
-      next: {
-        revalidate:
-          DAILY_SERIES_REVALIDATE_SECONDS,
-      },
-    });
+    try {
+      const response = await fetch(url, {
+        next: {
+          revalidate:
+            DAILY_SERIES_REVALIDATE_SECONDS,
+        },
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload =
+        (await response.json()) as AlphaVantageDailyResponse;
+
+      return (
+        payload["Time Series (Daily)"] ??
+        null
+      );
+    } catch {
       return null;
     }
-
-    const payload =
-      (await response.json()) as AlphaVantageDailyResponse;
-
-    return (
-      payload["Time Series (Daily)"] ??
-      null
-    );
   }
 
   async getQuote(
