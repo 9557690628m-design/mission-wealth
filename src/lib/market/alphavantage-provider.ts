@@ -1,4 +1,3 @@
-
 import { isFreshMarketData } from "./freshness";
 import type { MarketDataProvider } from "./provider";
 import type {
@@ -22,19 +21,23 @@ type AlphaVantageDailyResponse = {
   "Time Series (Daily)"?: AlphaVantageDailySeries;
 };
 
+const DAILY_SERIES_REVALIDATE_SECONDS = 60 * 60;
+
 export class AlphaVantageProvider
   implements MarketDataProvider
 {
   async getQuote(
     symbol: string
   ): Promise<MarketQuote | null> {
-    const apiKey = process.env.ALPHAVANTAGE_API_KEY;
+    const apiKey =
+      process.env.ALPHAVANTAGE_API_KEY;
 
     if (!apiKey) {
       return null;
     }
 
-    const alphaSymbol = `${symbol.toUpperCase()}.BSE`;
+    const alphaSymbol =
+      `${symbol.toUpperCase()}.BSE`;
 
     const url =
       `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY` +
@@ -43,7 +46,10 @@ export class AlphaVantageProvider
       `&apikey=${encodeURIComponent(apiKey)}`;
 
     const response = await fetch(url, {
-      cache: "no-store",
+      next: {
+        revalidate:
+          DAILY_SERIES_REVALIDATE_SECONDS,
+      },
     });
 
     if (!response.ok) {
@@ -53,7 +59,8 @@ export class AlphaVantageProvider
     const payload =
       (await response.json()) as AlphaVantageDailyResponse;
 
-    const series = payload["Time Series (Daily)"];
+    const series =
+      payload["Time Series (Daily)"];
 
     if (!series) {
       return null;
@@ -69,14 +76,23 @@ export class AlphaVantageProvider
       return null;
     }
 
-    if (!isFreshMarketData(latestDate, 7)) {
+    if (
+      !isFreshMarketData(
+        latestDate,
+        7
+      )
+    ) {
       return null;
     }
 
-    const latest = series[latestDate];
+    const latest =
+      series[latestDate];
 
-    const close = Number(latest["4. close"]);
-    const volume = Number(latest["5. volume"]);
+    const close =
+      Number(latest["4. close"]);
+
+    const volume =
+      Number(latest["5. volume"]);
 
     if (!Number.isFinite(close)) {
       return null;
@@ -100,13 +116,15 @@ export class AlphaVantageProvider
     from: string,
     to: string
   ): Promise<HistoricalPrice[]> {
-    const apiKey = process.env.ALPHAVANTAGE_API_KEY;
+    const apiKey =
+      process.env.ALPHAVANTAGE_API_KEY;
 
     if (!apiKey) {
       return [];
     }
 
-    const alphaSymbol = `${symbol.toUpperCase()}.BSE`;
+    const alphaSymbol =
+      `${symbol.toUpperCase()}.BSE`;
 
     const url =
       `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY` +
@@ -115,7 +133,10 @@ export class AlphaVantageProvider
       `&apikey=${encodeURIComponent(apiKey)}`;
 
     const response = await fetch(url, {
-      cache: "no-store",
+      next: {
+        revalidate:
+          DAILY_SERIES_REVALIDATE_SECONDS,
+      },
     });
 
     if (!response.ok) {
@@ -125,7 +146,8 @@ export class AlphaVantageProvider
     const payload =
       (await response.json()) as AlphaVantageDailyResponse;
 
-    const series = payload["Time Series (Daily)"];
+    const series =
+      payload["Time Series (Daily)"];
 
     if (!series) {
       return [];
@@ -133,16 +155,27 @@ export class AlphaVantageProvider
 
     const prices: HistoricalPrice[] = [];
 
-    for (const [date, values] of Object.entries(series)) {
-      if (date < from || date > to) {
+    for (
+      const [date, values]
+      of Object.entries(series)
+    ) {
+      if (
+        date < from ||
+        date > to
+      ) {
         continue;
       }
 
-      const open = Number(values["1. open"]);
-      const high = Number(values["2. high"]);
-      const low = Number(values["3. low"]);
-      const close = Number(values["4. close"]);
-      const volume = Number(values["5. volume"]);
+      const open =
+        Number(values["1. open"]);
+      const high =
+        Number(values["2. high"]);
+      const low =
+        Number(values["3. low"]);
+      const close =
+        Number(values["4. close"]);
+      const volume =
+        Number(values["5. volume"]);
 
       if (!Number.isFinite(close)) {
         continue;
@@ -172,8 +205,9 @@ export class AlphaVantageProvider
       prices.push(price);
     }
 
-    return prices.sort((a, b) =>
-      a.date.localeCompare(b.date)
+    return prices.sort(
+      (a, b) =>
+        a.date.localeCompare(b.date)
     );
   }
 
@@ -181,7 +215,7 @@ export class AlphaVantageProvider
     symbol: string
   ): Promise<FundamentalSnapshot | null> {
     void symbol;
+
     return null;
   }
-
 }
