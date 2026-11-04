@@ -4,7 +4,10 @@ import { buildFinancialDerivedMetrics } from "@/lib/financials/calculations";
 import { getFinancialPeriodComparison } from "@/lib/financials/periods";
 import { getQuarterlyResults } from "@/lib/financials/results";
 import { getFinancialSource } from "@/lib/financials/sources";
-import { getMarketDataProvider } from "@/lib/market";
+import {
+  getMarketHistory,
+  getMarketQuote,
+} from "@/lib/market";
 import { getStockIdentity } from "@/lib/market/stocks";
 import { notFound } from "next/navigation";
 
@@ -23,9 +26,7 @@ export default async function StockPage({
     notFound();
   }
 
-  const provider = getMarketDataProvider();
-
-  const quoteResult = await provider.getQuote(
+  const quoteResult = await getMarketQuote(
     company.symbol
   );
 
@@ -39,7 +40,7 @@ export default async function StockPage({
   );
 
   const history =
-    await provider.getHistoricalPrices(
+    await getMarketHistory(
       company.symbol,
       historyStart.toISOString().slice(0, 10),
       historyEnd.toISOString().slice(0, 10)
