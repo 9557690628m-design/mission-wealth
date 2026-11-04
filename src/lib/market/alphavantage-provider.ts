@@ -26,9 +26,9 @@ const DAILY_SERIES_REVALIDATE_SECONDS = 60 * 60;
 export class AlphaVantageProvider
   implements MarketDataProvider
 {
-  async getQuote(
+  private async getDailySeries(
     symbol: string
-  ): Promise<MarketQuote | null> {
+  ): Promise<AlphaVantageDailySeries | null> {
     const apiKey =
       process.env.ALPHAVANTAGE_API_KEY;
 
@@ -59,8 +59,17 @@ export class AlphaVantageProvider
     const payload =
       (await response.json()) as AlphaVantageDailyResponse;
 
+    return (
+      payload["Time Series (Daily)"] ??
+      null
+    );
+  }
+
+  async getQuote(
+    symbol: string
+  ): Promise<MarketQuote | null> {
     const series =
-      payload["Time Series (Daily)"];
+      await this.getDailySeries(symbol);
 
     if (!series) {
       return null;
@@ -116,38 +125,8 @@ export class AlphaVantageProvider
     from: string,
     to: string
   ): Promise<HistoricalPrice[]> {
-    const apiKey =
-      process.env.ALPHAVANTAGE_API_KEY;
-
-    if (!apiKey) {
-      return [];
-    }
-
-    const alphaSymbol =
-      `${symbol.toUpperCase()}.BSE`;
-
-    const url =
-      `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY` +
-      `&symbol=${encodeURIComponent(alphaSymbol)}` +
-      `&outputsize=compact` +
-      `&apikey=${encodeURIComponent(apiKey)}`;
-
-    const response = await fetch(url, {
-      next: {
-        revalidate:
-          DAILY_SERIES_REVALIDATE_SECONDS,
-      },
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
-    const payload =
-      (await response.json()) as AlphaVantageDailyResponse;
-
     const series =
-      payload["Time Series (Daily)"];
+      await this.getDailySeries(symbol);
 
     if (!series) {
       return [];
