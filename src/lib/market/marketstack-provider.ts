@@ -21,22 +21,30 @@ type MarketstackEodResponse = {
   data?: MarketstackEodRecord[];
 };
 
-export class MarketstackProvider implements MarketDataProvider {
+export class MarketstackProvider
+  implements MarketDataProvider
+{
   async getQuote(
     symbol: string
   ): Promise<MarketQuote | null> {
-    const apiKey = process.env.MARKETSTACK_API_KEY;
+    const apiKey =
+      process.env.MARKETSTACK_API_KEY;
 
     if (!apiKey) {
       return null;
     }
 
-    const marketstackSymbol = `${symbol.toUpperCase()}.BO`;
+    const marketstackSymbol =
+      `${symbol.toUpperCase()}.BO`;
 
     const url =
       `https://api.marketstack.com/v2/eod?access_key=${encodeURIComponent(
         apiKey
-      )}&symbols=${encodeURIComponent(marketstackSymbol)}&limit=1`;
+      )}` +
+      `&symbols=${encodeURIComponent(
+        marketstackSymbol
+      )}` +
+      `&limit=1`;
 
     const response = await fetch(url, {
       cache: "no-store",
@@ -49,7 +57,8 @@ export class MarketstackProvider implements MarketDataProvider {
     const payload =
       (await response.json()) as MarketstackEodResponse;
 
-    const record = payload.data?.[0];
+    const record =
+      payload.data?.[0];
 
     if (
       !record ||
@@ -59,7 +68,12 @@ export class MarketstackProvider implements MarketDataProvider {
       return null;
     }
 
-    if (!isFreshMarketData(record.date, 7)) {
+    if (
+      !isFreshMarketData(
+        record.date,
+        7
+      )
+    ) {
       return null;
     }
 
@@ -90,6 +104,7 @@ export class MarketstackProvider implements MarketDataProvider {
     symbol: string
   ): Promise<FundamentalSnapshot | null> {
     void symbol;
+
     return null;
   }
 }
