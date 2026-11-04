@@ -21,6 +21,8 @@ type MarketstackEodResponse = {
   data?: MarketstackEodRecord[];
 };
 
+const MARKETSTACK_QUOTE_REVALIDATE_SECONDS = 60 * 60;
+
 export class MarketstackProvider
   implements MarketDataProvider
 {
@@ -46,46 +48,58 @@ export class MarketstackProvider
       )}` +
       `&limit=1`;
 
-    const response = await fetch(url, {
-      cache: "no-store",
-    });
+    try {
+      const response = await fetch(url, {
+        next: {
+          revalidate:
+            MARKETSTACK_QUOTE_REVALIDATE_SECONDS,
+        },
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload =
+        (await response.json()) as MarketstackEodResponse;
+
+      const record =
+        payload.data?.[0];
+
+      if (
+        !record ||
+        !record.date ||
+        typeof record.close !== "number" ||
+        !Number.isFinite(record.close)
+      ) {
+        return null;
+      }
+
+      if (
+        !isFreshMarketData(
+          record.date,
+          7
+        )
+      ) {
+        return null;
+      }
+
+      return {
+        symbol: symbol.toUpperCase(),
+        exchange: "BSE",
+        price: record.close,
+        volume:
+          typeof record.volume === "number" &&
+          Number.isFinite(record.volume)
+            ? record.volume
+            : undefined,
+        timestamp: record.date,
+        source: "Marketstack",
+        isDelayed: true,
+      };
+    } catch {
       return null;
     }
-
-    const payload =
-      (await response.json()) as MarketstackEodResponse;
-
-    const record =
-      payload.data?.[0];
-
-    if (
-      !record ||
-      !record.date ||
-      typeof record.close !== "number"
-    ) {
-      return null;
-    }
-
-    if (
-      !isFreshMarketData(
-        record.date,
-        7
-      )
-    ) {
-      return null;
-    }
-
-    return {
-      symbol: symbol.toUpperCase(),
-      exchange: "BSE",
-      price: record.close,
-      volume: record.volume,
-      timestamp: record.date,
-      source: "Marketstack",
-      isDelayed: true,
-    };
   }
 
   async getHistoricalPrices(
