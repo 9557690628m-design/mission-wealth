@@ -33,6 +33,28 @@ export interface MarketQuote {
   isDelayed: boolean;
 }
 
+export type MarketDataStatus =
+  | "available"
+  | "stale"
+  | "unavailable";
+
+export type MarketDataUnavailableReason =
+  | "missing_configuration"
+  | "provider_error"
+  | "invalid_response"
+  | "no_data"
+  | "stale_data";
+
+export interface MarketQuoteResult {
+  status: MarketDataStatus;
+
+  quote: MarketQuote | null;
+
+  reason?: MarketDataUnavailableReason;
+
+  lastKnownTimestamp?: string;
+}
+
 export interface HistoricalPrice {
   date: string;
 

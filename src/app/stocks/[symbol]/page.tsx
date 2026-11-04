@@ -25,9 +25,11 @@ export default async function StockPage({
 
   const provider = getMarketDataProvider();
 
-  const quote = await provider.getQuote(
+  const quoteResult = await provider.getQuote(
     company.symbol
   );
+
+  const quote = quoteResult.quote;
 
   const historyEnd = new Date();
 
@@ -95,6 +97,7 @@ export default async function StockPage({
               {company.bseCode && (
                 <>
                   <span>•</span>
+
                   <span>
                     BSE: {company.bseCode}
                   </span>
@@ -108,6 +111,7 @@ export default async function StockPage({
               {company.industry && (
                 <>
                   <span>•</span>
+
                   <span>
                     {company.industry}
                   </span>
@@ -157,7 +161,9 @@ export default async function StockPage({
                 Latest EOD Price
               </div>
 
-              {quote ? (
+              {quoteResult.status ===
+                "available" &&
+              quote ? (
                 <>
                   <div className="mt-1 font-mono text-base font-semibold text-white">
                     ₹
@@ -168,7 +174,10 @@ export default async function StockPage({
 
                   <div className="mt-1 text-[10px] text-slate-500">
                     {quote.source} •{" "}
-                    {quote.exchange} • EOD
+                    {quote.exchange} •{" "}
+                    {quote.isDelayed
+                      ? "Delayed"
+                      : "Current"}
                   </div>
 
                   <div className="mt-1 text-[10px] text-slate-600">
@@ -180,9 +189,28 @@ export default async function StockPage({
                     )}
                   </div>
                 </>
+              ) : quoteResult.status ===
+                "stale" ? (
+                <>
+                  <div className="mt-2 text-sm font-semibold text-amber-300">
+                    Market data stale
+                  </div>
+
+                  {quoteResult.lastKnownTimestamp && (
+                    <div className="mt-1 text-[10px] text-slate-600">
+                      Last known data:{" "}
+                      {new Date(
+                        quoteResult.lastKnownTimestamp
+                      ).toLocaleDateString(
+                        "en-IN"
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="mt-2 text-sm font-semibold text-slate-500">
-                  Data unavailable
+                  Market data temporarily
+                  unavailable
                 </div>
               )}
             </div>

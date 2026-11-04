@@ -2,15 +2,22 @@ import type { MarketDataProvider } from "./provider";
 import type {
   FundamentalSnapshot,
   HistoricalPrice,
-  MarketQuote,
+  MarketQuoteResult,
 } from "./types";
 
-export class NullMarketDataProvider implements MarketDataProvider {
+export class NullMarketDataProvider
+  implements MarketDataProvider
+{
   async getQuote(
     symbol: string
-  ): Promise<MarketQuote | null> {
+  ): Promise<MarketQuoteResult> {
     void symbol;
-    return null;
+
+    return {
+      status: "unavailable",
+      quote: null,
+      reason: "missing_configuration",
+    };
   }
 
   async getHistoricalPrices(
@@ -29,7 +36,7 @@ export class NullMarketDataProvider implements MarketDataProvider {
     symbol: string
   ): Promise<FundamentalSnapshot | null> {
     void symbol;
+
     return null;
   }
-
 }

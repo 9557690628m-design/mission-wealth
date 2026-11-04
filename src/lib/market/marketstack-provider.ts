@@ -3,7 +3,7 @@ import type { MarketDataProvider } from "./provider";
 import type {
   FundamentalSnapshot,
   HistoricalPrice,
-  MarketQuote,
+  MarketQuoteResult,
 } from "./types";
 
 type MarketstackEodRecord = {
@@ -28,12 +28,16 @@ export class MarketstackProvider
 {
   async getQuote(
     symbol: string
-  ): Promise<MarketQuote | null> {
+  ): Promise<MarketQuoteResult> {
     const apiKey =
       process.env.MARKETSTACK_API_KEY;
 
     if (!apiKey) {
-      return null;
+      return {
+        status: "unavailable",
+        quote: null,
+        reason: "missing_configuration",
+      };
     }
 
     const marketstackSymbol =
@@ -57,7 +61,11 @@ export class MarketstackProvider
       });
 
       if (!response.ok) {
-        return null;
+        return {
+          status: "unavailable",
+          quote: null,
+          reason: "provider_error",
+        };
       }
 
       const payload =
@@ -68,11 +76,25 @@ export class MarketstackProvider
 
       if (
         !record ||
-        !record.date ||
+        !record.date
+      ) {
+        return {
+          status: "unavailable",
+          quote: null,
+          reason: "no_data",
+        };
+      }
+
+      if (
         typeof record.close !== "number" ||
         !Number.isFinite(record.close)
       ) {
-        return null;
+        return {
+          status: "unavailable",
+          quote: null,
+          reason: "invalid_response",
+          lastKnownTimestamp: record.date,
+        };
       }
 
       if (
@@ -81,24 +103,36 @@ export class MarketstackProvider
           7
         )
       ) {
-        return null;
+        return {
+          status: "stale",
+          quote: null,
+          reason: "stale_data",
+          lastKnownTimestamp: record.date,
+        };
       }
 
       return {
-        symbol: symbol.toUpperCase(),
-        exchange: "BSE",
-        price: record.close,
-        volume:
-          typeof record.volume === "number" &&
-          Number.isFinite(record.volume)
-            ? record.volume
-            : undefined,
-        timestamp: record.date,
-        source: "Marketstack",
-        isDelayed: true,
+        status: "available",
+        quote: {
+          symbol: symbol.toUpperCase(),
+          exchange: "BSE",
+          price: record.close,
+          volume:
+            typeof record.volume === "number" &&
+            Number.isFinite(record.volume)
+              ? record.volume
+              : undefined,
+          timestamp: record.date,
+          source: "Marketstack",
+          isDelayed: true,
+        },
       };
     } catch {
-      return null;
+      return {
+        status: "unavailable",
+        quote: null,
+        reason: "provider_error",
+      };
     }
   }
 

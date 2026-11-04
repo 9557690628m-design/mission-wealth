@@ -3,7 +3,7 @@ import type { MarketDataProvider } from "./provider";
 import type {
   FundamentalSnapshot,
   HistoricalPrice,
-  MarketQuote,
+  MarketQuoteResult,
 } from "./types";
 
 type AlphaVantageDailySeries = Record<
@@ -71,12 +71,27 @@ export class AlphaVantageProvider
 
   async getQuote(
     symbol: string
-  ): Promise<MarketQuote | null> {
+  ): Promise<MarketQuoteResult> {
+    const apiKey =
+      process.env.ALPHAVANTAGE_API_KEY;
+
+    if (!apiKey) {
+      return {
+        status: "unavailable",
+        quote: null,
+        reason: "missing_configuration",
+      };
+    }
+
     const series =
       await this.getDailySeries(symbol);
 
     if (!series) {
-      return null;
+      return {
+        status: "unavailable",
+        quote: null,
+        reason: "provider_error",
+      };
     }
 
     const dates = Object.keys(series)
@@ -86,7 +101,11 @@ export class AlphaVantageProvider
     const latestDate = dates[0];
 
     if (!latestDate) {
-      return null;
+      return {
+        status: "unavailable",
+        quote: null,
+        reason: "no_data",
+      };
     }
 
     if (
@@ -95,7 +114,12 @@ export class AlphaVantageProvider
         7
       )
     ) {
-      return null;
+      return {
+        status: "stale",
+        quote: null,
+        reason: "stale_data",
+        lastKnownTimestamp: latestDate,
+      };
     }
 
     const latest =
@@ -108,19 +132,27 @@ export class AlphaVantageProvider
       Number(latest["5. volume"]);
 
     if (!Number.isFinite(close)) {
-      return null;
+      return {
+        status: "unavailable",
+        quote: null,
+        reason: "invalid_response",
+        lastKnownTimestamp: latestDate,
+      };
     }
 
     return {
-      symbol: symbol.toUpperCase(),
-      exchange: "BSE",
-      price: close,
-      volume: Number.isFinite(volume)
-        ? volume
-        : undefined,
-      timestamp: latestDate,
-      source: "Alpha Vantage",
-      isDelayed: true,
+      status: "available",
+      quote: {
+        symbol: symbol.toUpperCase(),
+        exchange: "BSE",
+        price: close,
+        volume: Number.isFinite(volume)
+          ? volume
+          : undefined,
+        timestamp: latestDate,
+        source: "Alpha Vantage",
+        isDelayed: true,
+      },
     };
   }
 
