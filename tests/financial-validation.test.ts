@@ -215,12 +215,10 @@ test("rejects blank source URL when supplied", () => {
 });
 
 test("rejects non-INR currency", () => {
-  const result =
-    makeValidResult() as QuarterlyResult & {
-      currency: string;
-    };
-
-  result.currency = "USD";
+  const result = {
+    ...makeValidResult(),
+    currency: "USD",
+  } as unknown as QuarterlyResult;
 
   assert.equal(
     isValidQuarterlyResult(result),
