@@ -4,6 +4,15 @@ export const FINANCIAL_SOURCES: Record<
   string,
   FinancialSource
 > = {
+  "BEL-Q2-FY2026-27": {
+    type: "company_filing",
+    name:
+      "Bharat Electronics Limited Q2 FY2026-27 Financial Results",
+    filingDate: "2026-10-30",
+    reportingBasis: "standalone",
+    auditStatus: "unaudited",
+  },
+
   "BEL-Q1-FY2026-27": {
     type: "company_filing",
     name:

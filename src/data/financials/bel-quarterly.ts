@@ -3,6 +3,28 @@ import type { QuarterlyResult } from "@/lib/financials/types";
 export const BEL_QUARTERLY_RESULTS: QuarterlyResult[] = [
   {
     symbol: "BEL",
+    periodEnd: "2026-09-30",
+    fiscalYear: "FY2026-27",
+    quarter: "Q2",
+
+    revenue: 7290.87,
+    profitBeforeTax: 2064.04,
+    netProfit: 1540.73,
+    eps: 2.11,
+
+    currency: "INR",
+    unit: "crores",
+
+    reportedAt: "2026-10-30",
+
+    sourceId: "BEL-Q2-FY2026-27",
+
+    source:
+      "Bharat Electronics Limited - Q2 FY2026-27 Unaudited Financial Results",
+  },
+
+  {
+    symbol: "BEL",
     periodEnd: "2026-06-30",
     fiscalYear: "FY2026-27",
     quarter: "Q1",
