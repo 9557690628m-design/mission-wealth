@@ -21,4 +21,31 @@ export const FINANCIAL_SOURCES: Record<
     reportingBasis: "standalone",
     auditStatus: "audited",
   },
+
+  "BEL-Q3-FY2025-26": {
+    type: "company_filing",
+    name:
+      "Bharat Electronics Limited Q3 FY2025-26 Financial Results",
+    filingDate: "2026-01-28",
+    reportingBasis: "standalone",
+    auditStatus: "unaudited",
+  },
+
+  "BEL-Q2-FY2025-26": {
+    type: "company_filing",
+    name:
+      "Bharat Electronics Limited Q2 FY2025-26 Financial Results",
+    filingDate: "2025-10-31",
+    reportingBasis: "standalone",
+    auditStatus: "unaudited",
+  },
+
+  "BEL-Q1-FY2025-26": {
+    type: "company_filing",
+    name:
+      "Bharat Electronics Limited Q1 FY2025-26 Financial Results",
+    filingDate: "2025-07-28",
+    reportingBasis: "standalone",
+    auditStatus: "unaudited",
+  },
 };
