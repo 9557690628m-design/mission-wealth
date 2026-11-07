@@ -9,6 +9,7 @@ import {
 import { getFinancialPeriodComparison } from "@/lib/financials/periods";
 import { getQuarterlyResults } from "@/lib/financials/results";
 import { getFinancialSource } from "@/lib/financials/sources";
+import { buildTtmFinancials } from "@/lib/financials/ttm";
 import type {
   AnnualFinancialStatement,
   QuarterlyResult,
@@ -364,6 +365,11 @@ export default async function StockPage({
           previousYearQuarter
         )
       : null;
+
+  const ttmFinancials =
+    buildTtmFinancials(
+      quarterlyResults
+    );
 
   const latestAnnual =
     annualResults[0] ?? null;
@@ -890,6 +896,95 @@ export default async function StockPage({
                     corresponding prior-year
                     quarter exists in the
                     verified dataset.
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                      Trailing 12 Months
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-semibold text-white">
+                      TTM Financial Performance
+                    </h3>
+                  </div>
+
+                  {ttmFinancials && (
+                    <div className="text-xs text-slate-500">
+                      Through{" "}
+                      {formatDate(
+                        ttmFinancials.periodEnd
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {ttmFinancials ? (
+                  <>
+                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
+                      Calculated by aggregating
+                      the latest four consecutive
+                      verified quarterly results.
+                      Each metric remains
+                      unavailable independently
+                      if any required quarterly
+                      input is missing.
+                    </p>
+
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <MetricCard
+                        label="TTM Revenue"
+                        value={formatCrores(
+                          ttmFinancials.revenue
+                        )}
+                        note="Sum of the latest four consecutive verified quarterly revenue figures."
+                      />
+
+                      <MetricCard
+                        label="TTM Profit Before Tax"
+                        value={formatCrores(
+                          ttmFinancials.profitBeforeTax
+                        )}
+                        note="Sum of the latest four consecutive verified quarterly PBT figures."
+                      />
+
+                      <MetricCard
+                        label="TTM Net Profit"
+                        value={formatCrores(
+                          ttmFinancials.netProfit
+                        )}
+                        note="Sum of the latest four consecutive verified quarterly PAT figures."
+                      />
+
+                      <MetricCard
+                        label="TTM EPS"
+                        value={
+                          ttmFinancials.eps !==
+                          null
+                            ? `₹${formatNumber(
+                                ttmFinancials.eps
+                              )}`
+                            : "Unavailable"
+                        }
+                        note={
+                          ttmFinancials.eps ===
+                          null
+                            ? "Not calculated because at least one of the four verified quarterly EPS values is missing."
+                            : "Sum of the latest four consecutive verified quarterly EPS values."
+                        }
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-5 rounded-xl border border-white/10 bg-[#040c17] p-5 text-sm leading-6 text-slate-500">
+                    TTM analysis requires four
+                    consecutive verified
+                    quarterly periods. The
+                    current dataset does not yet
+                    satisfy that requirement.
                   </div>
                 )}
               </div>
@@ -1723,10 +1818,10 @@ export default async function StockPage({
 
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 Quarterly results, annual
-                statements, market data and
-                valuation availability are
-                tracked as verified coverage
-                expands.
+                statements, TTM performance,
+                market data and valuation
+                availability are tracked as
+                verified coverage expands.
               </p>
             </div>
           </div>
