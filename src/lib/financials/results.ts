@@ -1,3 +1,7 @@
+import {
+  unstable_cache,
+} from "next/cache";
+
 import type {
   QuarterlyResult,
 } from "@/lib/financials/types";
@@ -42,6 +46,33 @@ const quarterlyResultsRegistry: Record<
     return BEL_QUARTERLY_RESULTS;
   },
 };
+
+const loadCachedBelLiveResults =
+  unstable_cache(
+    async (): Promise<
+      BelLiveQuarterlyResultsResult
+    > => {
+      const {
+        loadBelLiveQuarterlyResults,
+      } =
+        await import(
+          "./bel-live-results"
+        );
+
+      return loadBelLiveQuarterlyResults();
+    },
+    [
+      "bel-live-quarterly-results",
+      "v1",
+    ],
+    {
+      revalidate:
+        60 * 60 * 6,
+      tags: [
+        "bel-quarterly-results",
+      ],
+    }
+  );
 
 export function getQuarterlyResultSymbols(): string[] {
   return Object.keys(
@@ -141,18 +172,7 @@ export async function getQuarterlyResultsWithLiveData(
   try {
     const loadBelLiveResults =
       options.loadBelLiveResults ??
-      (
-        async () => {
-          const {
-            loadBelLiveQuarterlyResults,
-          } =
-            await import(
-              "./bel-live-results"
-            );
-
-          return loadBelLiveQuarterlyResults();
-        }
-      );
+      loadCachedBelLiveResults;
 
     const liveResult =
       await loadBelLiveResults();

@@ -1,5 +1,3 @@
-import { PDFParse } from "pdf-parse";
-
 import {
   fetchBel,
 } from "../network/bel-fetch";
@@ -83,6 +81,13 @@ function isPdfContentType(
 async function extractPdfText(
   data: Uint8Array
 ): Promise<string> {
+  const {
+    PDFParse,
+  } =
+    await import(
+      "pdf-parse"
+    );
+
   const parser =
     new PDFParse({
       data,

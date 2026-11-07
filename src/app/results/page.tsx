@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import { buildFinancialDerivedMetrics } from "@/lib/financials/calculations";
 import { getFinancialPeriodComparison } from "@/lib/financials/periods";
 import {
-  getQuarterlyResults,
+  getQuarterlyResultsWithLiveData,
   getQuarterlyResultSymbols,
 } from "@/lib/financials/results";
 import { getStockIdentity } from "@/lib/market/stocks";
@@ -18,7 +18,7 @@ export default async function ResultsPage() {
         getStockIdentity(symbol);
 
       const results =
-        await getQuarterlyResults(
+        await getQuarterlyResultsWithLiveData(
           symbol
         );
 
@@ -266,8 +266,7 @@ export default async function ResultsPage() {
                             <td className="px-6 py-5 text-slate-300">
                               <div>
                                 {result.quarter ??
-                                  "Quarter"}
-                                {" "}
+                                  "Quarter"}{" "}
                                 {
                                   result.fiscalYear
                                 }

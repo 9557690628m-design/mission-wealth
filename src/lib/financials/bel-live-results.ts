@@ -84,7 +84,7 @@ function sortBelFilingsNewestFirst(
 }
 
 export async function loadBelLiveQuarterlyResults(
-  limit = 8,
+  limit = 2,
   options:
     BelLiveQuarterlyResultsOptions = {}
 ): Promise<BelLiveQuarterlyResultsResult> {
