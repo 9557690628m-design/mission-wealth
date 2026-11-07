@@ -1,36 +1,63 @@
-import type { StockIdentity } from "./types";
+import {
+  loadNseEquitySecurities,
+  type SecuritiesLoadResult,
+} from "./securities-loader";
+
+import type {
+  ListedSecurityRecord,
+} from "./securities-master";
+
+import type {
+  StockIdentity,
+} from "./types";
 
 export interface SearchableStockIdentity
   extends StockIdentity {
   aliases?: string[];
 }
 
-export const STOCK_MASTER: SearchableStockIdentity[] = [
+type SecuritiesLoader =
+  () => Promise<SecuritiesLoadResult>;
+
+export interface ResolveStockIdentityOptions {
+  loadSecurities?:
+    SecuritiesLoader;
+}
+
+export const STOCK_MASTER:
+  SearchableStockIdentity[] = [
   {
     symbol: "HDFCBANK",
     name: "HDFC Bank Ltd",
     slug: "hdfcbank",
     nseSymbol: "HDFCBANK",
     bseCode: "500180",
-    sector: "Banking & Financial Services",
-    industry: "Private Sector Bank",
+    sector:
+      "Banking & Financial Services",
+    industry:
+      "Private Sector Bank",
   },
   {
     symbol: "TCS",
-    name: "Tata Consultancy Services Ltd",
+    name:
+      "Tata Consultancy Services Ltd",
     slug: "tcs",
     nseSymbol: "TCS",
     bseCode: "532540",
-    sector: "Information Technology",
-    industry: "IT Services & Consulting",
+    sector:
+      "Information Technology",
+    industry:
+      "IT Services & Consulting",
   },
   {
     symbol: "RELIANCE",
-    name: "Reliance Industries Ltd",
+    name:
+      "Reliance Industries Ltd",
     slug: "reliance",
     nseSymbol: "RELIANCE",
     bseCode: "500325",
-    sector: "Energy & Diversified",
+    sector:
+      "Energy & Diversified",
     industry: "Diversified",
   },
   {
@@ -39,26 +66,34 @@ export const STOCK_MASTER: SearchableStockIdentity[] = [
     slug: "infosys",
     nseSymbol: "INFY",
     bseCode: "500209",
-    sector: "Information Technology",
-    industry: "IT Services & Consulting",
+    sector:
+      "Information Technology",
+    industry:
+      "IT Services & Consulting",
   },
   {
     symbol: "LT",
-    name: "Larsen & Toubro Ltd",
+    name:
+      "Larsen & Toubro Ltd",
     slug: "lt",
     nseSymbol: "LT",
     bseCode: "500510",
-    sector: "Industrials & Infrastructure",
-    industry: "Engineering & Construction",
+    sector:
+      "Industrials & Infrastructure",
+    industry:
+      "Engineering & Construction",
   },
   {
     symbol: "BEL",
-    name: "Bharat Electronics Ltd",
+    name:
+      "Bharat Electronics Ltd",
     slug: "bel",
     nseSymbol: "BEL",
     bseCode: "500049",
-    sector: "Defence & Aerospace",
-    industry: "Defence Electronics",
+    sector:
+      "Defence & Aerospace",
+    industry:
+      "Defence Electronics",
     aliases: [
       "Bharat Electronics",
       "Bharat Electronic",
@@ -66,12 +101,15 @@ export const STOCK_MASTER: SearchableStockIdentity[] = [
   },
   {
     symbol: "TITAGARH",
-    name: "Titagarh Rail Systems Ltd",
+    name:
+      "Titagarh Rail Systems Ltd",
     slug: "titagarh",
     nseSymbol: "TITAGARH",
     bseCode: "532966",
-    sector: "Industrials & Railways",
-    industry: "Railway Wagons",
+    sector:
+      "Industrials & Railways",
+    industry:
+      "Railway Wagons",
     aliases: [
       "Titagarh Rail Systems",
       "Titagarh Rail",
@@ -89,27 +127,36 @@ function normalizeSearchValue(
   return value
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+    .replace(
+      /[^a-z0-9]/g,
+      ""
+    );
 }
 
 function matchesAlias(
-  stock: SearchableStockIdentity,
+  stock:
+    SearchableStockIdentity,
   query: string
 ): boolean {
   return (
     stock.aliases?.some(
       (alias) =>
-        normalizeSearchValue(alias) ===
-        query
+        normalizeSearchValue(
+          alias
+        ) === query
     ) ?? false
   );
 }
 
 export function getStockIdentity(
   value: string
-): SearchableStockIdentity | undefined {
+):
+  | SearchableStockIdentity
+  | undefined {
   const query =
-    normalizeSearchValue(value);
+    normalizeSearchValue(
+      value
+    );
 
   return STOCK_MASTER.find(
     (stock) =>
@@ -137,12 +184,18 @@ export function getStockIdentity(
 
 export function searchStockIdentities(
   query: string
-): SearchableStockIdentity[] {
+):
+  SearchableStockIdentity[] {
   const q =
-    normalizeSearchValue(query);
+    normalizeSearchValue(
+      query
+    );
 
   if (!q) {
-    return STOCK_MASTER.slice(0, 8);
+    return STOCK_MASTER.slice(
+      0,
+      8
+    );
   }
 
   return STOCK_MASTER.filter(
@@ -165,5 +218,126 @@ export function searchStockIdentities(
           ).includes(q)
       );
     }
+  );
+}
+
+function matchesListedSecurity(
+  security:
+    ListedSecurityRecord,
+  query: string
+): boolean {
+  return [
+    security.symbol,
+    security.nseSymbol ?? "",
+    security.bseCode ?? "",
+    security.companyName,
+  ].some(
+    (value) =>
+      normalizeSearchValue(
+        value
+      ) === query
+  );
+}
+
+function buildStockIdentityFromSecurity(
+  security:
+    ListedSecurityRecord
+): SearchableStockIdentity {
+  const symbol =
+    (
+      security.nseSymbol ??
+      security.symbol
+    )
+      .trim()
+      .toUpperCase();
+
+  return {
+    symbol,
+
+    name:
+      security.companyName,
+
+    slug:
+      symbol.toLowerCase(),
+
+    nseSymbol:
+      security.nseSymbol ??
+      undefined,
+
+    bseCode:
+      security.bseCode ??
+      undefined,
+
+    isin:
+      security.isin ??
+      undefined,
+
+    sector:
+      "Listed Equity",
+  };
+}
+
+export async function resolveStockIdentity(
+  value: string,
+  options:
+    ResolveStockIdentityOptions = {}
+): Promise<
+  | SearchableStockIdentity
+  | undefined
+> {
+  const curated =
+    getStockIdentity(
+      value
+    );
+
+  if (curated) {
+    return curated;
+  }
+
+  const query =
+    normalizeSearchValue(
+      value
+    );
+
+  if (!query) {
+    return undefined;
+  }
+
+  const loadSecurities =
+    options.loadSecurities ??
+    loadNseEquitySecurities;
+
+  let result:
+    SecuritiesLoadResult;
+
+  try {
+    result =
+      await loadSecurities();
+  } catch {
+    return undefined;
+  }
+
+  if (
+    result.status !==
+    "available"
+  ) {
+    return undefined;
+  }
+
+  const security =
+    result.securities.find(
+      (item) =>
+        matchesListedSecurity(
+          item,
+          query
+        )
+    );
+
+  if (!security) {
+    return undefined;
+  }
+
+  return buildStockIdentityFromSecurity(
+    security
   );
 }

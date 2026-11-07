@@ -19,7 +19,7 @@ import {
   getMarketHistory,
   getMarketQuote,
 } from "@/lib/market";
-import { getStockIdentity } from "@/lib/market/stocks";
+import { resolveStockIdentity } from "@/lib/market/stocks";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -305,7 +305,7 @@ export default async function StockPage({
 }: PageProps) {
   const { symbol } = await params;
 
-  const company = getStockIdentity(symbol);
+  const company = await resolveStockIdentity(symbol);
 
   if (!company) {
     notFound();
