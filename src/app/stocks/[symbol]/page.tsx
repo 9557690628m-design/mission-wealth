@@ -13,6 +13,7 @@ import type {
   AnnualFinancialStatement,
   QuarterlyResult,
 } from "@/lib/financials/types";
+import { buildValuationMetrics } from "@/lib/financials/valuation";
 import {
   getMarketHistory,
   getMarketQuote,
@@ -383,6 +384,18 @@ export default async function StockPage({
         )
       : null;
 
+  const verifiedSharePrice =
+    quoteResult.status === "available" &&
+    quote
+      ? quote.price
+      : null;
+
+  const valuationMetrics =
+    buildValuationMetrics(
+      verifiedSharePrice,
+      latestAnnual
+    );
+
   const exchangeLabel =
     company.nseSymbol &&
     company.bseCode
@@ -405,7 +418,6 @@ export default async function StockPage({
     <main className="min-h-screen bg-[#020813] text-slate-200">
       <Navbar />
 
-      {/* Company Header */}
       <section className="border-b border-white/10 bg-[#06101d]">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
@@ -473,12 +485,12 @@ export default async function StockPage({
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        {/* Research Navigation */}
         <div className="mb-10 flex flex-wrap gap-2">
           {[
             ["Market", "#market"],
             ["Quarterly", "#financials"],
             ["Annual", "#annual"],
+            ["Valuation", "#valuation"],
             ["Sources", "#sources"],
             ["TECH-FUNDA™", "#tech-funda"],
           ].map(([label, href]) => (
@@ -492,7 +504,6 @@ export default async function StockPage({
           ))}
         </div>
 
-        {/* Coverage Summary */}
         <section className="mb-10">
           <div className="grid gap-4 md:grid-cols-4">
             <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5">
@@ -548,7 +559,7 @@ export default async function StockPage({
 
               <p className="mt-2 text-sm leading-6 text-slate-400">
                 Freshness is validated before a
-                price is shown as current.
+                price is used for valuation.
               </p>
             </div>
 
@@ -570,7 +581,6 @@ export default async function StockPage({
           </div>
         </section>
 
-        {/* Market */}
         <section
           id="market"
           className="mb-12 scroll-mt-24"
@@ -642,8 +652,8 @@ export default async function StockPage({
 
                     <p className="mt-2 text-sm leading-6 text-slate-500">
                       A stale quote is not shown
-                      as the current market
-                      price.
+                      or used for current
+                      valuation.
                     </p>
 
                     {quoteResult.lastKnownTimestamp && (
@@ -669,30 +679,54 @@ export default async function StockPage({
                 )}
               </div>
 
-              {[
-                "Market Capitalisation",
-                "P/E Ratio",
-                "Price to Book",
-                "EV / EBITDA",
-              ].map((label) => (
-                <div
-                  key={label}
-                  className="rounded-xl border border-white/10 bg-[#06101d] p-4"
-                >
-                  <div className="text-xs text-slate-500">
-                    {label}
-                  </div>
+              <MetricCard
+                label="Market Capitalisation"
+                value={formatCrores(
+                  valuationMetrics.marketCapitalisationCrores
+                )}
+                note={
+                  valuationMetrics.marketCapitalisationCrores !==
+                  null
+                    ? "Calculated from verified share price × audited shares outstanding."
+                    : "Unavailable until both a verified market price and audited share count are available."
+                }
+              />
 
-                  <div className="mt-2 text-sm font-semibold text-slate-500">
-                    Data unavailable
-                  </div>
-                </div>
-              ))}
+              <MetricCard
+                label="Annual P/E"
+                value={formatRatio(
+                  valuationMetrics.priceToEarnings
+                )}
+                note={
+                  latestAnnual
+                    ? `Price divided by audited EPS for ${latestAnnual.fiscalYear}. This is not a TTM P/E.`
+                    : "Audited annual EPS is unavailable."
+                }
+              />
+
+              <MetricCard
+                label="Price to Book"
+                value={formatRatio(
+                  valuationMetrics.priceToBook
+                )}
+                note={
+                  latestAnnual
+                    ? `Price divided by audited book value per share for ${latestAnnual.fiscalYear}.`
+                    : "Audited annual book value is unavailable."
+                }
+              />
+
+              <MetricCard
+                label="EV / EBITDA"
+                value={formatRatio(
+                  valuationMetrics.evToEbitda
+                )}
+                note="Unavailable until consistent verified debt and EBITDA inputs are available."
+              />
             </div>
           </div>
         </section>
 
-        {/* Quarterly Financials */}
         <section
           id="financials"
           className="mb-12 scroll-mt-24"
@@ -937,7 +971,6 @@ export default async function StockPage({
           )}
         </section>
 
-        {/* Annual Financials */}
         <section
           id="annual"
           className="mb-12 scroll-mt-24"
@@ -1278,7 +1311,88 @@ export default async function StockPage({
           )}
         </section>
 
-        {/* Sources */}
+        <section
+          id="valuation"
+          className="mb-12 scroll-mt-24"
+        >
+          <div className="mb-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+              03 • Value
+            </p>
+
+            <h2 className="mt-2 text-2xl font-semibold text-white">
+              Verified Valuation Snapshot
+            </h2>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              Valuation combines a verified
+              market quote with audited annual
+              financial inputs. These are
+              calculated research metrics, not
+              reported company figures.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              label="Market Capitalisation"
+              value={formatCrores(
+                valuationMetrics.marketCapitalisationCrores
+              )}
+              note="Calculated from verified share price and audited shares outstanding."
+            />
+
+            <MetricCard
+              label="Annual P/E"
+              value={formatRatio(
+                valuationMetrics.priceToEarnings
+              )}
+              note={
+                latestAnnual
+                  ? `Uses audited EPS from ${latestAnnual.fiscalYear}. Not a trailing-twelve-month P/E.`
+                  : "Audited annual EPS unavailable."
+              }
+            />
+
+            <MetricCard
+              label="Price to Book"
+              value={formatRatio(
+                valuationMetrics.priceToBook
+              )}
+              note={
+                latestAnnual
+                  ? `Uses audited book value per share from ${latestAnnual.fiscalYear}.`
+                  : "Audited book value unavailable."
+              }
+            />
+
+            <MetricCard
+              label="EV / EBITDA"
+              value={formatRatio(
+                valuationMetrics.evToEbitda
+              )}
+              note="Intentionally unavailable until verified normalized debt and EBITDA inputs exist."
+            />
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-white/10 bg-[#06101d] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+              Valuation Data Alignment
+            </p>
+
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-400">
+              The share price may be more recent
+              than the annual financial period.
+              P/E and P/B therefore show the
+              relationship between the verified
+              available market price and the
+              latest audited annual EPS or book
+              value currently in the Mission
+              Wealth dataset.
+            </p>
+          </div>
+        </section>
+
         <section
           id="sources"
           className="mb-12 scroll-mt-24"
@@ -1463,7 +1577,6 @@ export default async function StockPage({
           )}
         </section>
 
-        {/* Management */}
         <section className="mb-12">
           <div className="rounded-2xl border border-white/10 bg-[#06101d] p-6 md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
@@ -1489,7 +1602,6 @@ export default async function StockPage({
           </div>
         </section>
 
-        {/* TECH-FUNDA */}
         <section
           id="tech-funda"
           className="mb-12 scroll-mt-24"
@@ -1564,14 +1676,23 @@ export default async function StockPage({
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                {annualDerivedMetrics?.bookValuePerShare !==
-                null &&
-                annualDerivedMetrics?.bookValuePerShare !==
-                  undefined
-                  ? `Verified annual book value per share is available (${formatRupeesPerShare(
-                      annualDerivedMetrics.bookValuePerShare
-                    )}). Market valuation ratios remain pending the dedicated valuation layer.`
-                  : "Verified valuation metrics are not yet available."}
+                {valuationMetrics.priceToEarnings !==
+                  null &&
+                valuationMetrics.priceToBook !==
+                  null
+                  ? `Annual P/E ${formatRatio(
+                      valuationMetrics.priceToEarnings
+                    )} and P/B ${formatRatio(
+                      valuationMetrics.priceToBook
+                    )} are available from verified market and annual inputs.`
+                  : annualDerivedMetrics?.bookValuePerShare !==
+                        null &&
+                      annualDerivedMetrics?.bookValuePerShare !==
+                        undefined
+                    ? `Audited book value per share is available (${formatRupeesPerShare(
+                        annualDerivedMetrics.bookValuePerShare
+                      )}), but current market valuation is unavailable.`
+                    : "Verified valuation metrics are not yet available."}
               </p>
             </div>
 
@@ -1602,9 +1723,10 @@ export default async function StockPage({
 
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 Quarterly results, annual
-                statements and market-data
-                availability are tracked as
-                verified coverage expands.
+                statements, market data and
+                valuation availability are
+                tracked as verified coverage
+                expands.
               </p>
             </div>
           </div>
@@ -1626,7 +1748,6 @@ export default async function StockPage({
           </div>
         </section>
 
-        {/* Research Integrity */}
         <section className="mb-10 rounded-2xl border border-white/10 bg-[#06101d] p-6 md:p-8">
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
