@@ -11,8 +11,8 @@ import {
 } from "@/lib/financials/validation";
 
 import type {
-  BelLiveQuarterlyResultsResult,
-} from "./bel-live-results";
+  LiveQuarterlyResultsResult,
+} from "./live/types";
 
 import {
   mergeQuarterlyResults,
@@ -21,14 +21,16 @@ import {
 type QuarterlyResultsLoader =
   () => Promise<QuarterlyResult[]>;
 
-type BelLiveResultsLoader =
-  () => Promise<
-    BelLiveQuarterlyResultsResult
+type LiveResultsLoader =
+  (
+    symbol: string
+  ) => Promise<
+    LiveQuarterlyResultsResult
   >;
 
 export interface QuarterlyResultsWithLiveDataOptions {
-  loadBelLiveResults?:
-    BelLiveResultsLoader;
+  loadLiveResults?:
+    LiveResultsLoader;
 }
 
 const quarterlyResultsRegistry: Record<
@@ -47,29 +49,33 @@ const quarterlyResultsRegistry: Record<
   },
 };
 
-const loadCachedBelLiveResults =
+const loadCachedLiveResults =
   unstable_cache(
-    async (): Promise<
-      BelLiveQuarterlyResultsResult
+    async (
+      symbol: string
+    ): Promise<
+      LiveQuarterlyResultsResult
     > => {
       const {
-        loadBelLiveQuarterlyResults,
+        loadLiveQuarterlyResults,
       } =
         await import(
-          "./bel-live-results"
+          "./live/live-results"
         );
 
-      return loadBelLiveQuarterlyResults();
+      return loadLiveQuarterlyResults(
+        symbol
+      );
     },
     [
-      "bel-live-quarterly-results",
+      "live-quarterly-results",
       "v1",
     ],
     {
       revalidate:
         60 * 60 * 6,
       tags: [
-        "bel-quarterly-results",
+        "quarterly-results",
       ],
     }
   );
@@ -157,25 +163,31 @@ export async function getQuarterlyResultsWithLiveData(
       .trim()
       .toUpperCase();
 
+  if (!normalizedSymbol) {
+    return [];
+  }
+
   const staticResults =
     await getQuarterlyResults(
       normalizedSymbol
     );
 
-  if (
-    normalizedSymbol !==
-    "BEL"
-  ) {
-    return staticResults;
-  }
-
   try {
-    const loadBelLiveResults =
-      options.loadBelLiveResults ??
-      loadCachedBelLiveResults;
+    const loadLiveResults =
+      options.loadLiveResults ??
+      loadCachedLiveResults;
 
     const liveResult =
-      await loadBelLiveResults();
+      await loadLiveResults(
+        normalizedSymbol
+      );
+
+    if (
+      liveResult.results.length ===
+      0
+    ) {
+      return staticResults;
+    }
 
     return mergeQuarterlyResults(
       staticResults,

@@ -98,16 +98,19 @@ test("quarterly results loader returns empty results for unsupported symbol", as
   );
 });
 
-test("live-aware loader returns static results for unsupported symbol without calling BEL live loader", async () => {
-  let liveCalls = 0;
+test("live-aware loader supports generic symbol-aware live loader", async () => {
+  const receivedSymbols:
+    string[] = [];
 
   const results =
     await getQuarterlyResultsWithLiveData(
-      "UNKNOWN",
+      "BEL",
       {
-        loadBelLiveResults:
-          async () => {
-            liveCalls += 1;
+        loadLiveResults:
+          async (symbol) => {
+            receivedSymbols.push(
+              symbol
+            );
 
             return {
               results: [],
@@ -118,50 +121,62 @@ test("live-aware loader returns static results for unsupported symbol without ca
       }
     );
 
-  assert.deepEqual(
-    results,
-    []
+  assert.equal(
+    receivedSymbols.length,
+    1
   );
 
   assert.equal(
-    liveCalls,
-    0
+    receivedSymbols[0],
+    "BEL"
+  );
+
+  assert.equal(
+    results.length,
+    6
   );
 });
 
-test("live-aware BEL loader adds a new live quarter and keeps newest first", async () => {
+test("live-aware loader adds a new live quarter and keeps newest first", async () => {
   const results =
     await getQuarterlyResultsWithLiveData(
       "BEL",
       {
-        loadBelLiveResults:
-          async () => ({
-            discoveredCount: 1,
-            parsedCount: 1,
+        loadLiveResults:
+          async (symbol) => {
+            assert.equal(
+              symbol,
+              "BEL"
+            );
 
-            results: [
-              {
-                symbol: "BEL",
-                periodEnd:
-                  "2026-12-31",
-                fiscalYear:
-                  "FY2026-27",
-                quarter: "Q3",
+            return {
+              discoveredCount: 1,
+              parsedCount: 1,
 
-                revenue: 8000,
-                profitBeforeTax:
-                  2200,
-                netProfit: 1650,
-                eps: 2.25,
+              results: [
+                {
+                  symbol: "BEL",
+                  periodEnd:
+                    "2026-12-31",
+                  fiscalYear:
+                    "FY2026-27",
+                  quarter: "Q3",
 
-                currency: "INR",
-                unit: "crores",
+                  revenue: 8000,
+                  profitBeforeTax:
+                    2200,
+                  netProfit: 1650,
+                  eps: 2.25,
 
-                source:
-                  "Official live BEL Q3 filing",
-              },
-            ],
-          }),
+                  currency: "INR",
+                  unit: "crores",
+
+                  source:
+                    "Official live BEL Q3 filing",
+                },
+              ],
+            };
+          },
       }
     );
 
@@ -186,12 +201,12 @@ test("live-aware BEL loader adds a new live quarter and keeps newest first", asy
   );
 });
 
-test("live-aware BEL loader enriches an existing quarter without duplicating the period", async () => {
+test("live-aware loader enriches an existing quarter without duplicating the period", async () => {
   const results =
     await getQuarterlyResultsWithLiveData(
       "BEL",
       {
-        loadBelLiveResults:
+        loadLiveResults:
           async () => ({
             discoveredCount: 1,
             parsedCount: 1,
@@ -270,12 +285,12 @@ test("live-aware BEL loader enriches an existing quarter without duplicating the
   );
 });
 
-test("live-aware BEL loader preserves static data when live fields are missing", async () => {
+test("live-aware loader preserves static data when live fields are missing", async () => {
   const results =
     await getQuarterlyResultsWithLiveData(
       "BEL",
       {
-        loadBelLiveResults:
+        loadLiveResults:
           async () => ({
             discoveredCount: 1,
             parsedCount: 1,
@@ -327,7 +342,7 @@ test("live-aware BEL loader preserves static data when live fields are missing",
   );
 });
 
-test("live-aware BEL loader falls back to static results when live loading fails", async () => {
+test("live-aware loader falls back to static results when generic live loading fails", async () => {
   const staticResults =
     await getQuarterlyResults(
       "BEL"
@@ -337,10 +352,10 @@ test("live-aware BEL loader falls back to static results when live loading fails
     await getQuarterlyResultsWithLiveData(
       "BEL",
       {
-        loadBelLiveResults:
+        loadLiveResults:
           async () => {
             throw new Error(
-              "BEL unavailable"
+              "Live provider unavailable"
             );
           },
       }
