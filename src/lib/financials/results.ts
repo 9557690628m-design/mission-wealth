@@ -6,9 +6,8 @@ import {
   isValidQuarterlyResult,
 } from "@/lib/financials/validation";
 
-import {
-  loadBelLiveQuarterlyResults,
-  type BelLiveQuarterlyResultsResult,
+import type {
+  BelLiveQuarterlyResultsResult,
 } from "./bel-live-results";
 
 import {
@@ -139,11 +138,22 @@ export async function getQuarterlyResultsWithLiveData(
     return staticResults;
   }
 
-  const loadBelLiveResults =
-    options.loadBelLiveResults ??
-    loadBelLiveQuarterlyResults;
-
   try {
+    const loadBelLiveResults =
+      options.loadBelLiveResults ??
+      (
+        async () => {
+          const {
+            loadBelLiveQuarterlyResults,
+          } =
+            await import(
+              "./bel-live-results"
+            );
+
+          return loadBelLiveQuarterlyResults();
+        }
+      );
+
     const liveResult =
       await loadBelLiveResults();
 
