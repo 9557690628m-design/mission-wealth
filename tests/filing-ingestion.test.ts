@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import {
+  after,
+  before,
+  test,
+} from "node:test";
 
 import {
   ingestBelFinancialFiling,
@@ -8,6 +12,29 @@ import {
 import type {
   FinancialFiling,
 } from "../src/lib/financials/filings";
+
+const originalBelSectigoCa =
+  process.env
+    .BEL_SECTIGO_CA_BASE64;
+
+before(() => {
+  delete process.env
+    .BEL_SECTIGO_CA_BASE64;
+});
+
+after(() => {
+  if (
+    originalBelSectigoCa ===
+    undefined
+  ) {
+    delete process.env
+      .BEL_SECTIGO_CA_BASE64;
+  } else {
+    process.env
+      .BEL_SECTIGO_CA_BASE64 =
+      originalBelSectigoCa;
+  }
+});
 
 const filing: FinancialFiling = {
   title:

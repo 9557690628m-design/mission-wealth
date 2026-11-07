@@ -1,6 +1,8 @@
+import { PDFParse } from "pdf-parse";
+
 import {
-  PDFParse,
-} from "pdf-parse";
+  fetchBel,
+} from "../network/bel-fetch";
 
 import {
   parseBelQuarterlyFinancialText,
@@ -13,33 +15,34 @@ import type {
 
 export interface FilingIngestionResult {
   filing: FinancialFiling;
-
   status:
     | "parsed"
     | "unsupported_content_type"
     | "download_failed"
     | "empty_content"
     | "pdf_extraction_failed";
-
   financials:
     | ParsedQuarterlyFinancials
     | null;
-
   contentType:
     | string
     | null;
 }
 
-type PdfTextExtractor = (
-  data: Uint8Array
-) => Promise<string>;
+type PdfTextExtractor =
+  (
+    data: Uint8Array
+  ) => Promise<string>;
 
 export interface FilingIngestionOptions {
-  extractPdfText?: PdfTextExtractor;
+  extractPdfText?:
+    PdfTextExtractor;
 }
 
 function isSupportedTextContentType(
-  contentType: string | null
+  contentType:
+    | string
+    | null
 ): boolean {
   if (!contentType) {
     return true;
@@ -62,7 +65,9 @@ function isSupportedTextContentType(
 }
 
 function isPdfContentType(
-  contentType: string | null
+  contentType:
+    | string
+    | null
 ): boolean {
   if (!contentType) {
     return false;
@@ -95,13 +100,14 @@ async function extractPdfText(
 
 export async function ingestBelFinancialFiling(
   filing: FinancialFiling,
-  options: FilingIngestionOptions = {}
+  options:
+    FilingIngestionOptions = {}
 ): Promise<FilingIngestionResult> {
   let response: Response;
 
   try {
     response =
-      await fetch(
+      await fetchBel(
         filing.url,
         {
           headers: {
@@ -110,7 +116,6 @@ export async function ingestBelFinancialFiling(
             "User-Agent":
               "Mission-Wealth-Research/1.0",
           },
-
           cache: "no-store",
         }
       );
@@ -150,7 +155,8 @@ export async function ingestBelFinancialFiling(
       await response.arrayBuffer();
 
     if (
-      arrayBuffer.byteLength === 0
+      arrayBuffer.byteLength ===
+      0
     ) {
       return {
         filing,

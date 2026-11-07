@@ -1,3 +1,7 @@
+import {
+  fetchBel,
+} from "../network/bel-fetch";
+
 export interface FinancialFiling {
   title: string;
   url: string;
@@ -13,19 +17,22 @@ function decodeHtmlEntities(
   value: string
 ): string {
   return value
-    .replaceAll("&amp;", "&")
-    .replaceAll("&quot;", '"')
-    .replaceAll("&#039;", "'")
-    .replaceAll("&apos;", "'")
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">");
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 function stripHtml(
   value: string
 ): string {
   return decodeHtmlEntities(
-    value.replace(/<[^>]*>/g, " ")
+    value.replace(
+      /<[^>]*>/g,
+      " "
+    )
   )
     .replace(/\s+/g, " ")
     .trim();
@@ -49,7 +56,8 @@ export function extractBelFinancialFilings(
   html: string,
   baseUrl = BEL_INVESTOR_PAGE
 ): FinancialFiling[] {
-  const filings: FinancialFiling[] = [];
+  const filings:
+    FinancialFiling[] = [];
 
   const anchorPattern =
     /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -58,13 +66,13 @@ export function extractBelFinancialFilings(
     new Set<string>();
 
   let match:
-    | RegExpExecArray
-    | null;
+    RegExpExecArray | null;
 
   while (
     (match =
-      anchorPattern.exec(html)) !==
-    null
+      anchorPattern.exec(
+        html
+      )) !== null
   ) {
     const href = match[1];
     const title =
@@ -78,9 +86,7 @@ export function extractBelFinancialFilings(
       continue;
     }
 
-    if (
-      !/\bBEL\b/i.test(title)
-    ) {
+    if (!/\bBEL\b/i.test(title)) {
       continue;
     }
 
@@ -113,11 +119,10 @@ export function extractBelFinancialFilings(
   return filings;
 }
 
-export async function discoverBelFinancialFilings(): Promise<
-  FinancialFiling[]
-> {
+export async function discoverBelFinancialFilings():
+  Promise<FinancialFiling[]> {
   const response =
-    await fetch(
+    await fetchBel(
       BEL_INVESTOR_PAGE,
       {
         headers: {
@@ -126,7 +131,6 @@ export async function discoverBelFinancialFilings(): Promise<
           "User-Agent":
             "Mission-Wealth-Research/1.0",
         },
-
         cache: "no-store",
       }
     );
@@ -161,9 +165,8 @@ export async function discoverBelFinancialFilings(): Promise<
   );
 }
 
-export async function getLatestBelFinancialFiling(): Promise<
-  FinancialFiling | null
-> {
+export async function getLatestBelFinancialFiling():
+  Promise<FinancialFiling | null> {
   const filings =
     await discoverBelFinancialFilings();
 
