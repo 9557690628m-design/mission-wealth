@@ -1,16 +1,23 @@
 ﻿import Navbar from "@/components/Navbar";
 import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
-import { buildFinancialDerivedMetrics } from "@/lib/financials/calculations";
+import { getAnnualFinancials } from "@/lib/financials/annual";
+import {
+  buildAnnualDerivedMetrics,
+  buildFinancialDerivedMetrics,
+} from "@/lib/financials/calculations";
 import { getFinancialPeriodComparison } from "@/lib/financials/periods";
 import { getQuarterlyResults } from "@/lib/financials/results";
 import { getFinancialSource } from "@/lib/financials/sources";
+import type {
+  AnnualFinancialStatement,
+  QuarterlyResult,
+} from "@/lib/financials/types";
 import {
   getMarketHistory,
   getMarketQuote,
 } from "@/lib/market";
 import { getStockIdentity } from "@/lib/market/stocks";
-import type { QuarterlyResult } from "@/lib/financials/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -19,9 +26,13 @@ interface PageProps {
 }
 
 function formatCrores(
-  value: number | undefined
+  value: number | undefined | null
 ): string {
-  if (value === undefined) {
+  if (
+    value === undefined ||
+    value === null ||
+    !Number.isFinite(value)
+  ) {
     return "Data unavailable";
   }
 
@@ -32,9 +43,13 @@ function formatCrores(
 }
 
 function formatNumber(
-  value: number | undefined
+  value: number | undefined | null
 ): string {
-  if (value === undefined) {
+  if (
+    value === undefined ||
+    value === null ||
+    !Number.isFinite(value)
+  ) {
     return "Data unavailable";
   }
 
@@ -60,19 +75,48 @@ function formatPercent(
   return `${sign}${value.toFixed(1)}%`;
 }
 
+function formatRatio(
+  value: number | null | undefined
+): string {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value)
+  ) {
+    return "Unavailable";
+  }
+
+  return `${value.toFixed(2)}x`;
+}
+
+function formatRupeesPerShare(
+  value: number | null | undefined
+): string {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value)
+  ) {
+    return "Unavailable";
+  }
+
+  return `₹${value.toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 function formatDate(
-  value: string | undefined
+  value: string | undefined | null
 ): string {
   if (!value) {
     return "Unavailable";
   }
 
-  const date = new Date(
-    `${value.slice(0, 10)}T00:00:00Z`
-  );
+  const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return "Unavailable";
   }
 
   return date.toLocaleDateString("en-IN", {
@@ -88,11 +132,13 @@ function MetricCard({
   value,
   primaryComparison,
   secondaryComparison,
+  note,
 }: {
   label: string;
   value: string;
   primaryComparison?: string;
   secondaryComparison?: string;
+  note?: string;
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-[#06101d] p-5">
@@ -119,6 +165,12 @@ function MetricCard({
             </div>
           )}
         </div>
+      )}
+
+      {note && (
+        <p className="mt-3 text-xs leading-5 text-slate-600">
+          {note}
+        </p>
       )}
     </div>
   );
@@ -185,6 +237,67 @@ function ResultRow({
   );
 }
 
+function AnnualResultRow({
+  result,
+}: {
+  result: AnnualFinancialStatement;
+}) {
+  const source = getFinancialSource(
+    result.sourceId
+  );
+
+  return (
+    <tr className="border-b border-white/10 last:border-b-0">
+      <td className="whitespace-nowrap px-5 py-4">
+        <div className="font-medium text-white">
+          {result.fiscalYear}
+        </div>
+
+        <div className="mt-1 text-xs text-slate-500">
+          Annual
+        </div>
+      </td>
+
+      <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-400">
+        {formatDate(result.periodEnd)}
+      </td>
+
+      <td className="whitespace-nowrap px-5 py-4 font-mono text-sm text-slate-300">
+        {formatCrores(result.revenue)}
+      </td>
+
+      <td className="whitespace-nowrap px-5 py-4 font-mono text-sm text-slate-300">
+        {formatCrores(
+          result.profitBeforeTax
+        )}
+      </td>
+
+      <td className="whitespace-nowrap px-5 py-4 font-mono text-sm text-slate-300">
+        {formatCrores(result.netProfit)}
+      </td>
+
+      <td className="whitespace-nowrap px-5 py-4 font-mono text-sm text-slate-400">
+        {result.eps !== undefined
+          ? `₹${formatNumber(result.eps)}`
+          : "Unavailable"}
+      </td>
+
+      <td className="min-w-[190px] px-5 py-4">
+        <div className="text-sm text-slate-300">
+          {source?.name ?? result.source}
+        </div>
+
+        {source && (
+          <div className="mt-1 text-xs capitalize text-slate-600">
+            {source.auditStatus} •{" "}
+            {source.reportingBasis}
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 export default async function StockPage({
   params,
 }: PageProps) {
@@ -202,7 +315,6 @@ export default async function StockPage({
   const quote = quoteResult.quote;
 
   const historyEnd = new Date();
-
   const historyStart = new Date();
 
   historyStart.setFullYear(
@@ -215,11 +327,18 @@ export default async function StockPage({
       historyStart
         .toISOString()
         .slice(0, 10),
-      historyEnd.toISOString().slice(0, 10)
+      historyEnd
+        .toISOString()
+        .slice(0, 10)
     );
 
   const quarterlyResults =
     await getQuarterlyResults(
+      company.symbol
+    );
+
+  const annualResults =
+    await getAnnualFinancials(
       company.symbol
     );
 
@@ -236,12 +355,31 @@ export default async function StockPage({
       latestQuarter?.sourceId
     );
 
-  const derivedMetrics =
+  const quarterlyDerivedMetrics =
     latestQuarter
       ? buildFinancialDerivedMetrics(
           latestQuarter,
           previousQuarter,
           previousYearQuarter
+        )
+      : null;
+
+  const latestAnnual =
+    annualResults[0] ?? null;
+
+  const previousAnnual =
+    annualResults[1] ?? null;
+
+  const latestAnnualSource =
+    getFinancialSource(
+      latestAnnual?.sourceId
+    );
+
+  const annualDerivedMetrics =
+    latestAnnual
+      ? buildAnnualDerivedMetrics(
+          latestAnnual,
+          previousAnnual
         )
       : null;
 
@@ -253,8 +391,15 @@ export default async function StockPage({
         ? "NSE"
         : "BSE";
 
-  const hasVerifiedFinancials =
+  const hasQuarterlyFinancials =
     quarterlyResults.length > 0;
+
+  const hasAnnualFinancials =
+    annualResults.length > 0;
+
+  const hasVerifiedFinancials =
+    hasQuarterlyFinancials ||
+    hasAnnualFinancials;
 
   return (
     <main className="min-h-screen bg-[#020813] text-slate-200">
@@ -313,10 +458,10 @@ export default async function StockPage({
                 Mission Wealth research profile
                 for {company.name}, structured
                 through the TECH-FUNDA™
-                framework. Reported financial
-                information is displayed only
-                when it passes the verified-data
-                pipeline.
+                framework. Reported facts,
+                calculated metrics and market
+                data remain separate throughout
+                the research process.
               </p>
             </div>
 
@@ -332,7 +477,8 @@ export default async function StockPage({
         <div className="mb-10 flex flex-wrap gap-2">
           {[
             ["Market", "#market"],
-            ["Financials", "#financials"],
+            ["Quarterly", "#financials"],
+            ["Annual", "#annual"],
             ["Sources", "#sources"],
             ["TECH-FUNDA™", "#tech-funda"],
           ].map(([label, href]) => (
@@ -348,10 +494,10 @@ export default async function StockPage({
 
         {/* Coverage Summary */}
         <section className="mb-10">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-                Financial Coverage
+                Quarterly Coverage
               </p>
 
               <div className="mt-3 text-2xl font-semibold text-white">
@@ -361,6 +507,24 @@ export default async function StockPage({
               <p className="mt-2 text-sm leading-6 text-slate-400">
                 Verified quarterly period
                 {quarterlyResults.length === 1
+                  ? ""
+                  : "s"}{" "}
+                currently available.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                Annual Coverage
+              </p>
+
+              <div className="mt-3 text-2xl font-semibold text-white">
+                {annualResults.length}
+              </div>
+
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Verified annual period
+                {annualResults.length === 1
                   ? ""
                   : "s"}{" "}
                 currently available.
@@ -383,9 +547,8 @@ export default async function StockPage({
               </div>
 
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                Market-data freshness is
-                validated before a price is
-                shown as current.
+                Freshness is validated before a
+                price is shown as current.
               </p>
             </div>
 
@@ -400,8 +563,8 @@ export default async function StockPage({
 
               <p className="mt-2 text-sm leading-6 text-slate-400">
                 Missing information remains
-                unavailable rather than being
-                filled with synthetic figures.
+                unavailable instead of being
+                replaced by synthetic figures.
               </p>
             </div>
           </div>
@@ -529,7 +692,7 @@ export default async function StockPage({
           </div>
         </section>
 
-        {/* Latest Financials */}
+        {/* Quarterly Financials */}
         <section
           id="financials"
           className="mb-12 scroll-mt-24"
@@ -540,14 +703,16 @@ export default async function StockPage({
             </p>
 
             <h2 className="mt-2 text-2xl font-semibold text-white">
-              Verified Financial Performance
+              Verified Quarterly Performance
             </h2>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-              Financial figures below are
-              reported company data accepted
-              through the Mission Wealth
-              validation layer.
+              Quarterly figures are reported
+              company data accepted through the
+              Mission Wealth validation layer.
+              Growth and margins are calculated
+              separately from those reported
+              facts.
             </p>
           </div>
 
@@ -600,14 +765,14 @@ export default async function StockPage({
                     primaryComparison={
                       previousQuarter
                         ? `QoQ: ${formatPercent(
-                            derivedMetrics?.revenueQoQGrowth
+                            quarterlyDerivedMetrics?.revenueQoQGrowth
                           )}`
                         : undefined
                     }
                     secondaryComparison={
                       previousYearQuarter
                         ? `YoY: ${formatPercent(
-                            derivedMetrics?.revenueYoYGrowth
+                            quarterlyDerivedMetrics?.revenueYoYGrowth
                           )}`
                         : undefined
                     }
@@ -621,14 +786,14 @@ export default async function StockPage({
                     primaryComparison={
                       previousQuarter
                         ? `QoQ: ${formatPercent(
-                            derivedMetrics?.profitBeforeTaxQoQGrowth
+                            quarterlyDerivedMetrics?.profitBeforeTaxQoQGrowth
                           )}`
                         : undefined
                     }
                     secondaryComparison={
                       previousYearQuarter
                         ? `YoY: ${formatPercent(
-                            derivedMetrics?.profitBeforeTaxYoYGrowth
+                            quarterlyDerivedMetrics?.profitBeforeTaxYoYGrowth
                           )}`
                         : undefined
                     }
@@ -642,14 +807,14 @@ export default async function StockPage({
                     primaryComparison={
                       previousQuarter
                         ? `QoQ: ${formatPercent(
-                            derivedMetrics?.netProfitQoQGrowth
+                            quarterlyDerivedMetrics?.netProfitQoQGrowth
                           )}`
                         : undefined
                     }
                     secondaryComparison={
                       previousYearQuarter
                         ? `YoY: ${formatPercent(
-                            derivedMetrics?.netProfitYoYGrowth
+                            quarterlyDerivedMetrics?.netProfitYoYGrowth
                           )}`
                         : undefined
                     }
@@ -660,14 +825,14 @@ export default async function StockPage({
                   <MetricCard
                     label="PBT Margin"
                     value={formatPercent(
-                      derivedMetrics?.profitBeforeTaxMargin
+                      quarterlyDerivedMetrics?.profitBeforeTaxMargin
                     )}
                   />
 
                   <MetricCard
                     label="Net Profit Margin"
                     value={formatPercent(
-                      derivedMetrics?.netProfitMargin
+                      quarterlyDerivedMetrics?.netProfitMargin
                     )}
                   />
 
@@ -687,15 +852,14 @@ export default async function StockPage({
                 {!previousYearQuarter && (
                   <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-xs leading-6 text-slate-500">
                     YoY comparison is not shown
-                    because the exact
+                    unless the exact
                     corresponding prior-year
-                    quarter is not yet available
-                    in the verified dataset.
+                    quarter exists in the
+                    verified dataset.
                   </div>
                 )}
               </div>
 
-              {/* Financial History */}
               <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-[#06101d]">
                 <div className="border-b border-white/10 px-6 py-5">
                   <h3 className="font-semibold text-white">
@@ -703,10 +867,9 @@ export default async function StockPage({
                   </h3>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Only periods currently
-                    present in the verified
-                    financial registry are
-                    shown.
+                    Only periods present in the
+                    verified financial registry
+                    are shown.
                   </p>
                 </div>
 
@@ -761,7 +924,7 @@ export default async function StockPage({
           ) : (
             <div className="rounded-2xl border border-white/10 bg-[#06101d] p-10 text-center">
               <div className="text-lg font-semibold text-white">
-                Verified financial data unavailable
+                Verified quarterly data unavailable
               </div>
 
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
@@ -769,6 +932,347 @@ export default async function StockPage({
                 substitute missing company
                 filings with synthetic or
                 estimated financial figures.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* Annual Financials */}
+        <section
+          id="annual"
+          className="mb-12 scroll-mt-24"
+        >
+          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                Business Quality • Annual
+              </p>
+
+              <h2 className="mt-2 text-2xl font-semibold text-white">
+                Audited Annual Financial Analysis
+              </h2>
+
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                Annual reported facts are kept
+                separate from Mission Wealth
+                calculations such as growth,
+                ROE, free cash flow and cash
+                conversion.
+              </p>
+            </div>
+
+            {latestAnnualSource && (
+              <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] px-4 py-3 text-xs capitalize text-emerald-300">
+                {
+                  latestAnnualSource.auditStatus
+                }{" "}
+                •{" "}
+                {
+                  latestAnnualSource.reportingBasis
+                }
+              </div>
+            )}
+          </div>
+
+          {latestAnnual ? (
+            <>
+              <div className="rounded-2xl border border-white/10 bg-[#06101d] p-6">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                        Audited annual statement
+                      </span>
+
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
+                        Reported facts
+                      </span>
+
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
+                        Calculated metrics
+                      </span>
+                    </div>
+
+                    <h3 className="mt-4 text-2xl font-semibold text-white">
+                      {latestAnnual.fiscalYear}
+                    </h3>
+
+                    <p className="mt-2 text-sm text-slate-400">
+                      Financial year ended{" "}
+                      {formatDate(
+                        latestAnnual.periodEnd
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-[#040c17] px-4 py-3 text-xs text-slate-500">
+                    Reported{" "}
+                    {formatDate(
+                      latestAnnual.reportedAt
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Reported Annual Facts
+                  </p>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      label="Revenue"
+                      value={formatCrores(
+                        latestAnnual.revenue
+                      )}
+                      primaryComparison={
+                        previousAnnual
+                          ? `YoY: ${formatPercent(
+                              annualDerivedMetrics?.revenueGrowth
+                            )}`
+                          : undefined
+                      }
+                    />
+
+                    <MetricCard
+                      label="Profit Before Tax"
+                      value={formatCrores(
+                        latestAnnual.profitBeforeTax
+                      )}
+                      secondaryComparison={`Margin: ${formatPercent(
+                        annualDerivedMetrics?.profitBeforeTaxMargin
+                      )}`}
+                    />
+
+                    <MetricCard
+                      label="Net Profit"
+                      value={formatCrores(
+                        latestAnnual.netProfit
+                      )}
+                      primaryComparison={
+                        previousAnnual
+                          ? `YoY: ${formatPercent(
+                              annualDerivedMetrics?.netProfitGrowth
+                            )}`
+                          : undefined
+                      }
+                      secondaryComparison={`Margin: ${formatPercent(
+                        annualDerivedMetrics?.netProfitMargin
+                      )}`}
+                    />
+
+                    <MetricCard
+                      label="EPS"
+                      value={
+                        latestAnnual.eps !==
+                        undefined
+                          ? `₹${formatNumber(
+                              latestAnnual.eps
+                            )}`
+                          : "Data unavailable"
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      label="Total Assets"
+                      value={formatCrores(
+                        latestAnnual.totalAssets
+                      )}
+                    />
+
+                    <MetricCard
+                      label="Total Equity"
+                      value={formatCrores(
+                        latestAnnual.totalEquity
+                      )}
+                    />
+
+                    <MetricCard
+                      label="Cash & Equivalents"
+                      value={formatCrores(
+                        latestAnnual.cashAndEquivalents
+                      )}
+                    />
+
+                    <MetricCard
+                      label="Operating Cash Flow"
+                      value={formatCrores(
+                        latestAnnual.operatingCashFlow
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 border-t border-white/10 pt-8">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                        Mission Wealth Calculations
+                      </p>
+
+                      <h4 className="mt-2 text-lg font-semibold text-white">
+                        Business Quality & Cash Flow
+                      </h4>
+                    </div>
+
+                    <p className="max-w-xl text-xs leading-5 text-slate-500">
+                      These metrics are calculated
+                      from verified annual inputs;
+                      they are not company-reported
+                      figures unless explicitly
+                      stated.
+                    </p>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      label="Return on Equity"
+                      value={formatPercent(
+                        annualDerivedMetrics?.returnOnEquity
+                      )}
+                      note="Calculated using net profit and average equity when both annual periods are available."
+                    />
+
+                    <MetricCard
+                      label="Free Cash Flow"
+                      value={formatCrores(
+                        annualDerivedMetrics?.freeCashFlow
+                      )}
+                      note="Operating cash flow less absolute capital expenditure."
+                    />
+
+                    <MetricCard
+                      label="Cash Conversion"
+                      value={formatPercent(
+                        annualDerivedMetrics?.cashConversion
+                      )}
+                      note="Operating cash flow as a percentage of net profit."
+                    />
+
+                    <MetricCard
+                      label="Book Value / Share"
+                      value={formatRupeesPerShare(
+                        annualDerivedMetrics?.bookValuePerShare
+                      )}
+                      note="Calculated from total equity and shares outstanding."
+                    />
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <MetricCard
+                      label="ROCE"
+                      value={formatPercent(
+                        annualDerivedMetrics?.returnOnCapitalEmployed
+                      )}
+                      note={
+                        annualDerivedMetrics?.returnOnCapitalEmployed ===
+                        null
+                          ? "Not calculated because a normalized operating-profit input is not yet available."
+                          : "Calculated return on capital employed."
+                      }
+                    />
+
+                    <MetricCard
+                      label="Debt / Equity"
+                      value={formatRatio(
+                        annualDerivedMetrics?.debtToEquity
+                      )}
+                      note={
+                        annualDerivedMetrics?.debtToEquity ===
+                        null
+                          ? "Not calculated until a consistent verified debt definition is available."
+                          : "Calculated from total debt and total equity."
+                      }
+                    />
+
+                    <MetricCard
+                      label="Net Debt"
+                      value={formatCrores(
+                        annualDerivedMetrics?.netDebt
+                      )}
+                      note={
+                        annualDerivedMetrics?.netDebt ===
+                        null
+                          ? "Not calculated until verified normalized debt data is available."
+                          : "Total debt less cash and equivalents."
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-[#06101d]">
+                <div className="border-b border-white/10 px-6 py-5">
+                  <h3 className="font-semibold text-white">
+                    Verified Annual History
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Annual history comes from
+                    validated audited financial
+                    statement records.
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[980px] text-left">
+                    <thead className="border-b border-white/10 text-xs uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th className="px-5 py-4 font-medium">
+                          Fiscal Year
+                        </th>
+
+                        <th className="px-5 py-4 font-medium">
+                          Period End
+                        </th>
+
+                        <th className="px-5 py-4 font-medium">
+                          Revenue
+                        </th>
+
+                        <th className="px-5 py-4 font-medium">
+                          PBT
+                        </th>
+
+                        <th className="px-5 py-4 font-medium">
+                          Net Profit
+                        </th>
+
+                        <th className="px-5 py-4 font-medium">
+                          EPS
+                        </th>
+
+                        <th className="px-5 py-4 font-medium">
+                          Source
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {annualResults.map(
+                        (result) => (
+                          <AnnualResultRow
+                            key={`${result.symbol}-${result.periodEnd}`}
+                            result={result}
+                          />
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-[#06101d] p-10 text-center">
+              <div className="text-lg font-semibold text-white">
+                Verified annual data unavailable
+              </div>
+
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
+                Annual ratios are not generated
+                without validated annual
+                financial statement inputs.
               </p>
             </div>
           )}
@@ -790,83 +1294,165 @@ export default async function StockPage({
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
               Research credibility depends on
-              knowing whether information came
-              from a company filing, exchange
-              disclosure, calculation or
-              research interpretation.
+              distinguishing company filings,
+              annual reports, calculated metrics,
+              market data and research
+              interpretation.
             </p>
           </div>
 
-          {quarterlyResults.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {quarterlyResults.map(
-                (result) => {
-                  const source =
-                    getFinancialSource(
-                      result.sourceId
-                    );
+          {hasVerifiedFinancials ? (
+            <div className="space-y-8">
+              {annualResults.length > 0 && (
+                <div>
+                  <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Annual Report Sources
+                  </h3>
 
-                  return (
-                    <div
-                      key={result.periodEnd}
-                      className="rounded-2xl border border-white/10 bg-[#06101d] p-6"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                          {result.quarter}
-                        </span>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {annualResults.map(
+                      (result) => {
+                        const source =
+                          getFinancialSource(
+                            result.sourceId
+                          );
 
-                        <span className="text-xs text-slate-500">
-                          {result.fiscalYear}
-                        </span>
-                      </div>
+                        return (
+                          <div
+                            key={`annual-${result.periodEnd}`}
+                            className="rounded-2xl border border-white/10 bg-[#06101d] p-6"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                                Annual
+                              </span>
 
-                      <h3 className="mt-4 font-semibold text-white">
-                        {source?.name ??
-                          result.source}
-                      </h3>
+                              <span className="text-xs text-slate-500">
+                                {
+                                  result.fiscalYear
+                                }
+                              </span>
+                            </div>
 
-                      {source && (
-                        <div className="mt-4 grid gap-2 text-xs text-slate-500">
-                          <div>
-                            Filing date:{" "}
-                            {formatDate(
-                              source.filingDate
+                            <h4 className="mt-4 font-semibold text-white">
+                              {source?.name ??
+                                result.source}
+                            </h4>
+
+                            {source && (
+                              <div className="mt-4 grid gap-2 text-xs text-slate-500">
+                                <div>
+                                  Filing date:{" "}
+                                  {formatDate(
+                                    source.filingDate
+                                  )}
+                                </div>
+
+                                <div className="capitalize">
+                                  Reporting basis:{" "}
+                                  {
+                                    source.reportingBasis
+                                  }
+                                </div>
+
+                                <div className="capitalize">
+                                  Audit status:{" "}
+                                  {
+                                    source.auditStatus
+                                  }
+                                </div>
+
+                                <div className="capitalize">
+                                  Source type:{" "}
+                                  {source.type.replaceAll(
+                                    "_",
+                                    " "
+                                  )}
+                                </div>
+                              </div>
                             )}
                           </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              )}
 
-                          <div className="capitalize">
-                            Reporting basis:{" "}
-                            {
-                              source.reportingBasis
-                            }
-                          </div>
+              {quarterlyResults.length > 0 && (
+                <div>
+                  <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Quarterly Filing Sources
+                  </h3>
 
-                          <div className="capitalize">
-                            Audit status:{" "}
-                            {source.auditStatus}
-                          </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {quarterlyResults.map(
+                      (result) => {
+                        const source =
+                          getFinancialSource(
+                            result.sourceId
+                          );
 
-                          <div className="capitalize">
-                            Source type:{" "}
-                            {source.type.replaceAll(
-                              "_",
-                              " "
+                        return (
+                          <div
+                            key={`quarter-${result.periodEnd}`}
+                            className="rounded-2xl border border-white/10 bg-[#06101d] p-6"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                                {result.quarter}
+                              </span>
+
+                              <span className="text-xs text-slate-500">
+                                {
+                                  result.fiscalYear
+                                }
+                              </span>
+                            </div>
+
+                            <h4 className="mt-4 font-semibold text-white">
+                              {source?.name ??
+                                result.source}
+                            </h4>
+
+                            {source && (
+                              <div className="mt-4 grid gap-2 text-xs text-slate-500">
+                                <div>
+                                  Filing date:{" "}
+                                  {formatDate(
+                                    source.filingDate
+                                  )}
+                                </div>
+
+                                <div className="capitalize">
+                                  Reporting basis:{" "}
+                                  {
+                                    source.reportingBasis
+                                  }
+                                </div>
+
+                                <div className="capitalize">
+                                  Audit status:{" "}
+                                  {
+                                    source.auditStatus
+                                  }
+                                </div>
+
+                                <div className="capitalize">
+                                  Source type:{" "}
+                                  {source.type.replaceAll(
+                                    "_",
+                                    " "
+                                  )}
+                                </div>
+                              </div>
                             )}
                           </div>
-                        </div>
-                      )}
-
-                      {!source && (
-                        <p className="mt-4 text-xs leading-6 text-slate-500">
-                          Source metadata is not
-                          available in the
-                          registry.
-                        </p>
-                      )}
-                    </div>
-                  );
-                }
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           ) : (
@@ -957,8 +1543,9 @@ export default async function StockPage({
 
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 {hasVerifiedFinancials
-                  ? `${quarterlyResults.length} verified quarterly period${
-                      quarterlyResults.length ===
+                  ? `${quarterlyResults.length} quarterly and ${annualResults.length} annual verified period${
+                      quarterlyResults.length +
+                        annualResults.length ===
                       1
                         ? ""
                         : "s"
@@ -977,8 +1564,14 @@ export default async function StockPage({
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                Verified valuation metrics are
-                not yet available.
+                {annualDerivedMetrics?.bookValuePerShare !==
+                null &&
+                annualDerivedMetrics?.bookValuePerShare !==
+                  undefined
+                  ? `Verified annual book value per share is available (${formatRupeesPerShare(
+                      annualDerivedMetrics.bookValuePerShare
+                    )}). Market valuation ratios remain pending the dedicated valuation layer.`
+                  : "Verified valuation metrics are not yet available."}
               </p>
             </div>
 
@@ -992,9 +1585,9 @@ export default async function StockPage({
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                Structured company-specific risk
-                assessment is awaiting verified
-                research inputs.
+                {hasAnnualFinancials
+                  ? "Audited balance-sheet and cash-flow coverage is available. Debt ratios remain unavailable until debt is normalized consistently."
+                  : "Structured company-specific risk assessment is awaiting verified annual inputs."}
               </p>
             </div>
 
@@ -1008,7 +1601,8 @@ export default async function StockPage({
               </h3>
 
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                Quarterly results and market
+                Quarterly results, annual
+                statements and market-data
                 availability are tracked as
                 verified coverage expands.
               </p>
@@ -1024,10 +1618,10 @@ export default async function StockPage({
               A TECH-FUNDA™ conclusion is not
               generated merely because a stock
               exists in the research universe.
-              The framework should become more
-              complete only as verified market,
-              financial, valuation, management
-              and risk evidence is added.
+              Reported facts, market data,
+              calculated metrics, management
+              statements and research
+              interpretation remain distinct.
             </p>
           </div>
         </section>
@@ -1052,7 +1646,7 @@ export default async function StockPage({
                 company facts. Reported facts,
                 calculated metrics, management
                 statements and research
-                interpretation should remain
+                interpretation remain
                 distinguishable.
               </p>
             </div>
