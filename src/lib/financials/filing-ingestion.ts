@@ -1,4 +1,8 @@
 import {
+  PDFParse,
+} from "pdf-parse";
+
+import {
   parseBelQuarterlyFinancialText,
   type ParsedQuarterlyFinancials,
 } from "./filing-parser";
@@ -14,7 +18,8 @@ export interface FilingIngestionResult {
     | "parsed"
     | "unsupported_content_type"
     | "download_failed"
-    | "empty_content";
+    | "empty_content"
+    | "pdf_extraction_failed";
 
   financials:
     | ParsedQuarterlyFinancials
@@ -23,6 +28,14 @@ export interface FilingIngestionResult {
   contentType:
     | string
     | null;
+}
+
+type PdfTextExtractor = (
+  data: Uint8Array
+) => Promise<string>;
+
+export interface FilingIngestionOptions {
+  extractPdfText?: PdfTextExtractor;
 }
 
 function isSupportedTextContentType(
@@ -48,8 +61,41 @@ function isSupportedTextContentType(
   );
 }
 
+function isPdfContentType(
+  contentType: string | null
+): boolean {
+  if (!contentType) {
+    return false;
+  }
+
+  return contentType
+    .toLowerCase()
+    .includes(
+      "application/pdf"
+    );
+}
+
+async function extractPdfText(
+  data: Uint8Array
+): Promise<string> {
+  const parser =
+    new PDFParse({
+      data,
+    });
+
+  try {
+    const result =
+      await parser.getText();
+
+    return result.text;
+  } finally {
+    await parser.destroy();
+  }
+}
+
 export async function ingestBelFinancialFiling(
-  filing: FinancialFiling
+  filing: FinancialFiling,
+  options: FilingIngestionOptions = {}
 ): Promise<FilingIngestionResult> {
   let response: Response;
 
@@ -60,7 +106,7 @@ export async function ingestBelFinancialFiling(
         {
           headers: {
             Accept:
-              "text/plain,text/html,application/xhtml+xml",
+              "application/pdf,text/plain,text/html,application/xhtml+xml",
             "User-Agent":
               "Mission-Wealth-Research/1.0",
           },
@@ -93,11 +139,59 @@ export async function ingestBelFinancialFiling(
     };
   }
 
+  let text: string;
+
   if (
-    !isSupportedTextContentType(
+    isPdfContentType(
       contentType
     )
   ) {
+    const arrayBuffer =
+      await response.arrayBuffer();
+
+    if (
+      arrayBuffer.byteLength === 0
+    ) {
+      return {
+        filing,
+        status:
+          "empty_content",
+        financials: null,
+        contentType,
+      };
+    }
+
+    const pdfData =
+      new Uint8Array(
+        arrayBuffer
+      );
+
+    const pdfTextExtractor =
+      options.extractPdfText ??
+      extractPdfText;
+
+    try {
+      text =
+        await pdfTextExtractor(
+          pdfData
+        );
+    } catch {
+      return {
+        filing,
+        status:
+          "pdf_extraction_failed",
+        financials: null,
+        contentType,
+      };
+    }
+  } else if (
+    isSupportedTextContentType(
+      contentType
+    )
+  ) {
+    text =
+      await response.text();
+  } else {
     return {
       filing,
       status:
@@ -106,9 +200,6 @@ export async function ingestBelFinancialFiling(
       contentType,
     };
   }
-
-  const text =
-    await response.text();
 
   if (!text.trim()) {
     return {

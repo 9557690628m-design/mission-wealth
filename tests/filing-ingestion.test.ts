@@ -155,19 +155,138 @@ test("ingestBelFinancialFiling reports download failure when fetch throws", asyn
   }
 });
 
-test("ingestBelFinancialFiling rejects PDF content until PDF extraction is explicitly supported", async () => {
+test("ingestBelFinancialFiling extracts and parses PDF financial text", async () => {
   const originalFetch =
     globalThis.fetch;
 
   globalThis.fetch =
     (async () =>
       new Response(
-        "%PDF-1.7 binary content",
+        new Uint8Array([
+          37,
+          80,
+          68,
+          70,
+        ]),
         {
           status: 200,
           headers: {
             "content-type":
               "application/pdf",
+          },
+        }
+      )) as typeof fetch;
+
+  try {
+    const result =
+      await ingestBelFinancialFiling(
+        filing,
+        {
+          extractPdfText:
+            async () => `
+              Revenue from operations 5,533.06
+              Profit Before Tax 1,402.83
+              Profit After Tax 1,048.33
+              Basic EPS 1.43
+            `,
+        }
+      );
+
+    assert.equal(
+      result.status,
+      "parsed"
+    );
+
+    assert.equal(
+      result.contentType,
+      "application/pdf"
+    );
+
+    assert.deepEqual(
+      result.financials,
+      {
+        revenue: 5533.06,
+        profitBeforeTax:
+          1402.83,
+        netProfit: 1048.33,
+        eps: 1.43,
+      }
+    );
+  } finally {
+    globalThis.fetch =
+      originalFetch;
+  }
+});
+
+test("ingestBelFinancialFiling reports PDF extraction failure", async () => {
+  const originalFetch =
+    globalThis.fetch;
+
+  globalThis.fetch =
+    (async () =>
+      new Response(
+        new Uint8Array([
+          37,
+          80,
+          68,
+          70,
+        ]),
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "application/pdf",
+          },
+        }
+      )) as typeof fetch;
+
+  try {
+    const result =
+      await ingestBelFinancialFiling(
+        filing,
+        {
+          extractPdfText:
+            async () => {
+              throw new Error(
+                "Invalid PDF"
+              );
+            },
+        }
+      );
+
+    assert.equal(
+      result.status,
+      "pdf_extraction_failed"
+    );
+
+    assert.equal(
+      result.financials,
+      null
+    );
+
+    assert.equal(
+      result.contentType,
+      "application/pdf"
+    );
+  } finally {
+    globalThis.fetch =
+      originalFetch;
+  }
+});
+
+test("ingestBelFinancialFiling rejects unsupported content types", async () => {
+  const originalFetch =
+    globalThis.fetch;
+
+  globalThis.fetch =
+    (async () =>
+      new Response(
+        "binary content",
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "application/zip",
           },
         }
       )) as typeof fetch;
@@ -186,11 +305,6 @@ test("ingestBelFinancialFiling rejects PDF content until PDF extraction is expli
     assert.equal(
       result.financials,
       null
-    );
-
-    assert.equal(
-      result.contentType,
-      "application/pdf"
     );
   } finally {
     globalThis.fetch =

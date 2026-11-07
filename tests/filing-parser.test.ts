@@ -143,6 +143,85 @@ test("matching is case insensitive", () => {
   );
 });
 
+test("parses real BEL PDF-style broken spacing and narrative values", () => {
+  const text = `
+    Defence PSU Bharat Electronics Limited (BEL) has achieved
+
+    Revenue
+    from
+    operations of
+    Rs.
+    5
+    ,
+    533.06 Crore
+
+    registering a growth of 25.27% during the 1st Quarter
+    of FY 2026-27.
+
+    Profit
+    Before Tax
+    (
+    PBT
+    )
+    during the
+    1
+    st
+    Quarter
+    of
+    FY
+    2026
+    -27
+    stood
+    at
+    Rs
+    .
+    1
+    ,
+    402.83
+    Crore
+
+    Profit After Tax
+    (
+    PAT
+    )
+    during the
+    1
+    st
+    Quarter
+    of
+    FY
+    2026
+    -
+    27
+    stood
+    at
+    Rs
+    .
+    1
+    ,
+    048.33
+    Crore
+
+    Earnings per share (Basic & Diluted) (₹) (not annualised)
+    13    1.43    3.01
+  `;
+
+  const result =
+    parseBelQuarterlyFinancialText(
+      text
+    );
+
+  assert.deepEqual(
+    result,
+    {
+      revenue: 5533.06,
+      profitBeforeTax: 1402.83,
+      netProfit: 1048.33,
+      eps: 1.43,
+    }
+  );
+});
+
 test("missing reported fields remain undefined", () => {
   const text = `
     Revenue from operations 5,533.06
