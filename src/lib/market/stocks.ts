@@ -1,6 +1,11 @@
 import type { StockIdentity } from "./types";
 
-export const STOCK_MASTER: StockIdentity[] = [
+export interface SearchableStockIdentity
+  extends StockIdentity {
+  aliases?: string[];
+}
+
+export const STOCK_MASTER: SearchableStockIdentity[] = [
   {
     symbol: "HDFCBANK",
     name: "HDFC Bank Ltd",
@@ -54,39 +59,111 @@ export const STOCK_MASTER: StockIdentity[] = [
     bseCode: "500049",
     sector: "Defence & Aerospace",
     industry: "Defence Electronics",
+    aliases: [
+      "Bharat Electronics",
+      "Bharat Electronic",
+    ],
+  },
+  {
+    symbol: "TITAGARH",
+    name: "Titagarh Rail Systems Ltd",
+    slug: "titagarh",
+    nseSymbol: "TITAGARH",
+    bseCode: "532966",
+    sector: "Industrials & Railways",
+    industry: "Railway Wagons",
+    aliases: [
+      "Titagarh Rail Systems",
+      "Titagarh Rail",
+      "Titagarh Wagon",
+      "Titagarh Wagons",
+      "Titagarh Wagons Ltd",
+      "Titagarh Wagons Limited",
+    ],
   },
 ];
 
+function normalizeSearchValue(
+  value: string
+): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function matchesAlias(
+  stock: SearchableStockIdentity,
+  query: string
+): boolean {
+  return (
+    stock.aliases?.some(
+      (alias) =>
+        normalizeSearchValue(alias) ===
+        query
+    ) ?? false
+  );
+}
+
 export function getStockIdentity(
   value: string
-): StockIdentity | undefined {
-  const query = value.trim().toLowerCase();
+): SearchableStockIdentity | undefined {
+  const query =
+    normalizeSearchValue(value);
 
   return STOCK_MASTER.find(
     (stock) =>
-      stock.symbol.toLowerCase() === query ||
-      stock.slug.toLowerCase() === query ||
-      stock.nseSymbol?.toLowerCase() === query ||
-      stock.bseCode === query
+      normalizeSearchValue(
+        stock.symbol
+      ) === query ||
+      normalizeSearchValue(
+        stock.slug
+      ) === query ||
+      normalizeSearchValue(
+        stock.nseSymbol ?? ""
+      ) === query ||
+      normalizeSearchValue(
+        stock.bseCode ?? ""
+      ) === query ||
+      normalizeSearchValue(
+        stock.name
+      ) === query ||
+      matchesAlias(
+        stock,
+        query
+      )
   );
 }
+
 export function searchStockIdentities(
   query: string
-): StockIdentity[] {
-  const q = query.trim().toLowerCase();
+): SearchableStockIdentity[] {
+  const q =
+    normalizeSearchValue(query);
 
   if (!q) {
     return STOCK_MASTER.slice(0, 8);
   }
 
   return STOCK_MASTER.filter(
-    (stock) =>
-      stock.symbol.toLowerCase().includes(q) ||
-      stock.name.toLowerCase().includes(q) ||
-      stock.slug.toLowerCase().includes(q) ||
-      stock.nseSymbol?.toLowerCase().includes(q) ||
-      stock.bseCode?.includes(q) ||
-      stock.sector.toLowerCase().includes(q) ||
-      stock.industry?.toLowerCase().includes(q)
+    (stock) => {
+      const searchableValues = [
+        stock.symbol,
+        stock.name,
+        stock.slug,
+        stock.nseSymbol ?? "",
+        stock.bseCode ?? "",
+        stock.sector,
+        stock.industry ?? "",
+        ...(stock.aliases ?? []),
+      ];
+
+      return searchableValues.some(
+        (value) =>
+          normalizeSearchValue(
+            value
+          ).includes(q)
+      );
+    }
   );
 }
