@@ -57,4 +57,22 @@ export const FINANCIAL_SOURCES: Record<
     reportingBasis: "standalone",
     auditStatus: "unaudited",
   },
+
+  "BEL-ANNUAL-FY2024-25": {
+    type: "annual_report",
+    name:
+      "Bharat Electronics Limited Integrated Annual Report 2024-25",
+    filingDate: "2025-05-19",
+    reportingBasis: "standalone",
+    auditStatus: "audited",
+  },
+
+  "BEL-ANNUAL-FY2023-24": {
+    type: "annual_report",
+    name:
+      "Bharat Electronics Limited Integrated Annual Report 2024-25 - Comparative FY2023-24 Financial Statements",
+    filingDate: "2025-05-19",
+    reportingBasis: "standalone",
+    auditStatus: "audited",
+  },
 };

@@ -1,5 +1,9 @@
 import { FINANCIAL_SOURCES } from "@/data/financials/sources";
-import type { QuarterlyResult } from "./types";
+import type {
+  AnnualFinancialStatement,
+  FinancialSource,
+  QuarterlyResult,
+} from "./types";
 
 const ISO_DATE_PATTERN =
   /^\d{4}-\d{2}-\d{2}$/;
@@ -17,35 +21,9 @@ function isValidIsoDate(value: string): boolean {
   );
 }
 
-function hasOnlyFiniteNumbers(
-  result: QuarterlyResult
-): boolean {
-  const numericValues = [
-    result.revenue,
-    result.operatingProfit,
-    result.profitBeforeTax,
-    result.netProfit,
-    result.eps,
-    result.totalAssets,
-    result.totalDebt,
-    result.cashAndEquivalents,
-    result.operatingCashFlow,
-    result.capitalExpenditure,
-    result.freeCashFlow,
-  ];
-
-  return numericValues.every(
-    (value) =>
-      value === undefined ||
-      Number.isFinite(value)
-  );
-}
-
 function hasValidSourceDetails(
-  result: QuarterlyResult
+  details: FinancialSource | undefined
 ): boolean {
-  const details = result.sourceDetails;
-
   if (!details) {
     return true;
   }
@@ -76,19 +54,83 @@ function hasValidSourceDetails(
 }
 
 function hasValidSourceId(
-  result: QuarterlyResult
+  sourceId: string | undefined
 ): boolean {
-  if (result.sourceId === undefined) {
+  if (sourceId === undefined) {
     return true;
   }
 
-  const sourceId = result.sourceId.trim();
+  const normalizedSourceId =
+    sourceId.trim();
 
-  if (!sourceId) {
+  if (!normalizedSourceId) {
     return false;
   }
 
-  return sourceId in FINANCIAL_SOURCES;
+  return (
+    normalizedSourceId in
+    FINANCIAL_SOURCES
+  );
+}
+
+function hasOnlyFiniteQuarterlyNumbers(
+  result: QuarterlyResult
+): boolean {
+  const numericValues = [
+    result.revenue,
+    result.operatingProfit,
+    result.profitBeforeTax,
+    result.netProfit,
+    result.eps,
+    result.totalAssets,
+    result.totalDebt,
+    result.cashAndEquivalents,
+    result.operatingCashFlow,
+    result.capitalExpenditure,
+    result.freeCashFlow,
+  ];
+
+  return numericValues.every(
+    (value) =>
+      value === undefined ||
+      Number.isFinite(value)
+  );
+}
+
+function hasOnlyFiniteAnnualNumbers(
+  result: AnnualFinancialStatement
+): boolean {
+  const numericValues = [
+    result.revenue,
+    result.operatingProfit,
+    result.profitBeforeTax,
+    result.netProfit,
+    result.eps,
+
+    result.totalAssets,
+    result.totalEquity,
+    result.currentLiabilities,
+
+    result.totalDebt,
+    result.shortTermDebt,
+    result.longTermDebt,
+
+    result.cashAndEquivalents,
+
+    result.operatingCashFlow,
+    result.capitalExpenditure,
+    result.investingCashFlow,
+    result.financingCashFlow,
+    result.freeCashFlow,
+
+    result.sharesOutstandingCrores,
+  ];
+
+  return numericValues.every(
+    (value) =>
+      value === undefined ||
+      Number.isFinite(value)
+  );
 }
 
 export function isValidQuarterlyResult(
@@ -113,11 +155,15 @@ export function isValidQuarterlyResult(
     return false;
   }
 
-  if (!hasValidSourceId(result)) {
+  if (!hasValidSourceId(result.sourceId)) {
     return false;
   }
 
-  if (!hasValidSourceDetails(result)) {
+  if (
+    !hasValidSourceDetails(
+      result.sourceDetails
+    )
+  ) {
     return false;
   }
 
@@ -125,7 +171,87 @@ export function isValidQuarterlyResult(
     return false;
   }
 
-  if (!hasOnlyFiniteNumbers(result)) {
+  if (
+    !hasOnlyFiniteQuarterlyNumbers(
+      result
+    )
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+export function isValidAnnualFinancialStatement(
+  result: AnnualFinancialStatement
+): boolean {
+  if (!result.symbol.trim()) {
+    return false;
+  }
+
+  if (!result.fiscalYear.trim()) {
+    return false;
+  }
+
+  if (!isValidIsoDate(result.periodEnd)) {
+    return false;
+  }
+
+  if (
+    result.periodStart !== undefined &&
+    !isValidIsoDate(result.periodStart)
+  ) {
+    return false;
+  }
+
+  if (
+    result.periodStart !== undefined &&
+    result.periodStart >
+      result.periodEnd
+  ) {
+    return false;
+  }
+
+  if (
+    result.reportedAt !== undefined &&
+    !isValidIsoDate(result.reportedAt)
+  ) {
+    return false;
+  }
+
+  if (!result.source.trim()) {
+    return false;
+  }
+
+  if (!hasValidSourceId(result.sourceId)) {
+    return false;
+  }
+
+  if (
+    !hasValidSourceDetails(
+      result.sourceDetails
+    )
+  ) {
+    return false;
+  }
+
+  if (result.currency !== "INR") {
+    return false;
+  }
+
+  if (
+    !hasOnlyFiniteAnnualNumbers(
+      result
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    result.sharesOutstandingCrores !==
+      undefined &&
+    result.sharesOutstandingCrores <= 0
+  ) {
     return false;
   }
 
