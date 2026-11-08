@@ -37,14 +37,17 @@ function extractAttribute(
   attributes: string,
   name: string
 ): string | null {
+  const pattern =
+    new RegExp(
+      `${escapeRegExp(
+        name
+      )}\\s*=\\s*["']([^"']+)["']`,
+      "i"
+    );
+
   const match =
     attributes.match(
-      new RegExp(
-        `${escapeRegExp(
-          name
-        )}\\s*=\\s*["']([^"']+)["']`,
-        "i"
-      )
+      pattern
     );
 
   return match?.[1] ?? null;
@@ -80,6 +83,11 @@ function extractContexts(
     const body =
       match[2];
 
+    /*
+     * Dimensional / segment contexts are
+     * intentionally ignored. We want the
+     * top-level quarter facts only.
+     */
     if (
       /<xbrli:scenario\b/i.test(
         body
@@ -154,6 +162,13 @@ function selectQuarterContext(
     return null;
   }
 
+  /*
+   * Prefer the latest period end.
+   * If both current-quarter and
+   * year-to-date contexts end on the
+   * same date, prefer the shortest
+   * duration so OneD wins over FourD.
+   */
   return [...contexts]
     .sort(
       (a, b) => {
@@ -258,12 +273,21 @@ function parseNumber(
     return undefined;
   }
 
-  const parsed =
-    Number(
-      value.replace(
+  const normalized =
+    value
+      .trim()
+      .replace(
         /,/g,
         ""
       )
+      .replace(
+        /^\((.*)\)$/,
+        "-$1"
+      );
+
+  const parsed =
+    Number(
+      normalized
     );
 
   if (
@@ -304,6 +328,15 @@ function parseMoneyFactInCrores(
     return undefined;
   }
 
+  /*
+   * NSE XBRL monetary facts normally
+   * use absolute INR. Convert absolute
+   * INR to crores.
+   *
+   * Some filings may already expose a
+   * scaled unit identifier; in that
+   * case preserve the filed value.
+   */
   if (
     fact.unitRef
       ?.toUpperCase() ===
@@ -316,13 +349,47 @@ function parseMoneyFactInCrores(
   return value;
 }
 
+function parseFirstMoneyFactInCrores(
+  xml: string,
+  tagNames: string[],
+  contextId: string
+): number | undefined {
+  for (
+    const tagName of
+    tagNames
+  ) {
+    const value =
+      parseMoneyFactInCrores(
+        xml,
+        tagName,
+        contextId
+      );
+
+    if (
+      value !== undefined
+    ) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 function parseEps(
   xml: string,
   contextId: string
 ): number | undefined {
+  /*
+   * General-company Ind-AS concepts
+   * come first. Banking concepts are
+   * included as generic fallbacks.
+   */
   const tags = [
     "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
     "BasicEarningsLossPerShareFromContinuingOperations",
+    "BasicEarningsPerShareAfterExtraordinaryItems",
+    "BasicEarningsPerShareBeforeExtraordinaryItems",
+    "BasicEarningsPerShare",
   ];
 
   for (
@@ -408,6 +475,26 @@ function normalizeAuditStatus(
   return "unknown";
 }
 
+function hasMeaningfulFinancialValue(
+  values: {
+    revenue?: number;
+    profitBeforeTax?: number;
+    netProfit?: number;
+    eps?: number;
+  }
+): boolean {
+  return (
+    values.revenue !==
+      undefined ||
+    values.profitBeforeTax !==
+      undefined ||
+    values.netProfit !==
+      undefined ||
+    values.eps !==
+      undefined
+  );
+}
+
 export function parseNseQuarterlyXbrl(
   xml: string
 ):
@@ -424,42 +511,106 @@ export function parseNseQuarterlyXbrl(
     return null;
   }
 
+  /*
+   * GENERAL / IND-AS:
+   *   RevenueFromOperations
+   *
+   * BANKING:
+   *   Income is the banking taxonomy's
+   *   total-income line.
+   *
+   * Keep InterestEarned and TotalIncome
+   * as defensive banking fallbacks for
+   * older / alternate taxonomy versions.
+   */
   const revenue =
-    parseMoneyFactInCrores(
+    parseFirstMoneyFactInCrores(
       xml,
-      "RevenueFromOperations",
-      context.id
-    );
-
-  const profitBeforeTax =
-    parseMoneyFactInCrores(
-      xml,
-      "ProfitBeforeTax",
+      [
+        "RevenueFromOperations",
+        "Income",
+        "TotalIncome",
+        "InterestEarned",
+        "TotalInterestEarned",
+      ],
       context.id
     );
 
   /*
-   * For consolidated results,
-   * profit attributable to owners
-   * is the shareholder-relevant PAT.
+   * General companies normally use
+   * ProfitBeforeTax.
    *
-   * For standalone filings this tag
-   * may be absent, so fall back to
-   * total ProfitLossForPeriod.
+   * Banks use
+   * ProfitLossFromOrdinaryActivitiesBeforeTax.
+   */
+  const profitBeforeTax =
+    parseFirstMoneyFactInCrores(
+      xml,
+      [
+        "ProfitBeforeTax",
+        "ProfitLossFromOrdinaryActivitiesBeforeTax",
+        "TotalProfitBeforeTax",
+        "ProfitLossBeforeTax",
+      ],
+      context.id
+    );
+
+  /*
+   * For consolidated general-company
+   * results, profit attributable to
+   * owners is shareholder-relevant PAT.
+   *
+   * Banking filings generally expose
+   * ProfitLossForThePeriod and may also
+   * expose a post-minority-interest
+   * concept.
    */
   const ownersProfit =
-    parseMoneyFactInCrores(
+    parseFirstMoneyFactInCrores(
       xml,
-      "ProfitOrLossAttributableToOwnersOfParent",
+      [
+        "ProfitOrLossAttributableToOwnersOfParent",
+        "ProfitLossAfterTaxesMinorityInterestAndShareOfProfitLossOfAssociates",
+      ],
       context.id
     );
 
   const totalProfit =
-    parseMoneyFactInCrores(
+    parseFirstMoneyFactInCrores(
       xml,
-      "ProfitLossForPeriod",
+      [
+        "ProfitLossForPeriod",
+        "ProfitLossForThePeriod",
+        "ProfitLossFromOrdinaryActivitiesAfterTax",
+        "NetProfitForThePeriod",
+      ],
       context.id
     );
+
+  const eps =
+    parseEps(
+      xml,
+      context.id
+    );
+
+  /*
+   * Critical validation:
+   * a filing with correct metadata but
+   * no parsed financial facts must NOT
+   * count as verified quarterly coverage.
+   */
+  if (
+    !hasMeaningfulFinancialValue({
+      revenue,
+      profitBeforeTax,
+      netProfit:
+        ownersProfit ??
+        totalProfit,
+      eps,
+    })
+  ) {
+    return null;
+  }
 
   const reportingBasis =
     normalizeReportingBasis(
@@ -498,10 +649,6 @@ export function parseNseQuarterlyXbrl(
       ownersProfit ??
       totalProfit,
 
-    eps:
-      parseEps(
-        xml,
-        context.id
-      ),
+    eps,
   };
 }
