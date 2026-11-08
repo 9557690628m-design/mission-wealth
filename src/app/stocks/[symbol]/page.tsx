@@ -1,4 +1,5 @@
-﻿import Navbar from "@/components/Navbar";
+import Navbar from "@/components/Navbar";
+import MissionMarketChart from "@/components/charts/MissionMarketChart";
 import StockChart from "@/components/TradingViewWidget";
 import StockSearch from "@/components/StockSearch";
 import { getAnnualFinancials } from "@/lib/financials/annual";
@@ -16,6 +17,7 @@ import type {
 } from "@/lib/financials/types";
 import { buildValuationMetrics } from "@/lib/financials/valuation";
 import {
+  getMarketCandles,
   getMarketHistory,
   getMarketQuote,
 } from "@/lib/market";
@@ -323,16 +325,33 @@ export default async function StockPage({
     historyStart.getFullYear() - 1
   );
 
+  const historyFrom =
+    historyStart
+      .toISOString()
+      .slice(0, 10);
+
+  const historyTo =
+    historyEnd
+      .toISOString()
+      .slice(0, 10);
+
   const history =
     await getMarketHistory(
       company.symbol,
-      historyStart
-        .toISOString()
-        .slice(0, 10),
-      historyEnd
-        .toISOString()
-        .slice(0, 10)
+      historyFrom,
+      historyTo
     );
+
+  const marketCandles =
+    company.bseCode
+      ? await getMarketCandles({
+          symbol: company.symbol,
+          exchange: "BSE",
+          interval: "1d",
+          from: historyFrom,
+          to: historyTo,
+        })
+      : [];
 
   const quarterlyResults =
     await getQuarterlyResultsWithLiveData(
@@ -612,10 +631,16 @@ export default async function StockPage({
 
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#06101d]">
-              <StockChart
-                symbol={company.symbol}
-                prices={history}
-              />
+              {marketCandles.length > 0 ? (
+                <MissionMarketChart
+                  candles={marketCandles}
+                />
+              ) : (
+                <StockChart
+                  symbol={company.symbol}
+                  prices={history}
+                />
+              )}
             </div>
 
             <div className="space-y-4">
