@@ -69,7 +69,7 @@ const loadCachedLiveResults =
     },
     [
       "live-quarterly-results",
-      "v1",
+      "v2",
     ],
     {
       revalidate:
