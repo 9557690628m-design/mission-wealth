@@ -7,7 +7,7 @@ import {
   buildFinancialDerivedMetrics,
 } from "@/lib/financials/calculations";
 import { getFinancialPeriodComparison } from "@/lib/financials/periods";
-import { getQuarterlyResults } from "@/lib/financials/results";
+import { getQuarterlyResultsWithLiveData } from "@/lib/financials/results";
 import { getFinancialSource } from "@/lib/financials/sources";
 import { buildTtmFinancials } from "@/lib/financials/ttm";
 import type {
@@ -183,9 +183,9 @@ function ResultRow({
 }: {
   result: QuarterlyResult;
 }) {
-  const source = getFinancialSource(
-    result.sourceId
-  );
+  const source =
+    result.sourceDetails ??
+    getFinancialSource(result.sourceId);
 
   return (
     <tr className="border-b border-white/10 last:border-b-0">
@@ -335,7 +335,7 @@ export default async function StockPage({
     );
 
   const quarterlyResults =
-    await getQuarterlyResults(
+    await getQuarterlyResultsWithLiveData(
       company.symbol
     );
 
@@ -353,6 +353,7 @@ export default async function StockPage({
   );
 
   const latestQuarterSource =
+    latestQuarter?.sourceDetails ??
     getFinancialSource(
       latestQuarter?.sourceId
     );
@@ -1598,6 +1599,7 @@ export default async function StockPage({
                     {quarterlyResults.map(
                       (result) => {
                         const source =
+                          result.sourceDetails ??
                           getFinancialSource(
                             result.sourceId
                           );
